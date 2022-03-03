@@ -20,7 +20,7 @@ changepoint3<-function(pt){
 
 energytes<-function(tile){
   perim<-tilePerim(tile)$perimeters
-  energytesel<-c()
+  energytesel<-c(0)
   for (i in 1:length(tile)){
     energytesel<-energytesel+((k/2)*(((tile[[i]]$area)-A0)^2))+(gam/2)*(perim[[i]])^2+lambda*perim[[i]]
   }
@@ -31,7 +31,7 @@ teselandenergy3<-function(xt,yt){
   tesel<-deldir(xt,yt,rw=rec)
   tilest<-tile.list(tesel)[(n+1):(2*n)]
   perim<-tilePerim(tilest)$perimeters
-  tesener<-c()
+  tesener<-c(0)
   for (i in 1:n){
     tesener<-tesener+((k/2)*(((tilest[[i]]$area)-A0)^2))+(gam/2)*(perim[[i]])^2+lambda*perim[[i]]
   }
