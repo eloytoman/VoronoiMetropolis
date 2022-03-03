@@ -19,7 +19,7 @@ changepoint3_alg2<-function(pt,ind){
 
 energytes_adim<-function(tile){
   perim_ad<-(tilePerim(tile)$perimeters)/sqrt(A0)
-  energytesel<-c()
+  energytesel<-c(0)
   for (i in 1:length(tile)){
     energytesel<-energytesel+(((tile[[i]]$area)/A0)-1)^2+
       (gam_ad/2)*(perim_ad[[i]])^2+
@@ -32,7 +32,7 @@ teselandenergy3_adim<-function(xt,yt){
   tesel<-deldir(xt,yt,rw=rec)
   tilest<-tile.list(tesel)[(n+1):(2*n)]
   perim_ad<-(tilePerim(tilest)$perimeters)/sqrt(A0)
-  tesener<-c()
+  tesener<-c(0)
   for (i in 1:n){
     tesener<-tesener+(((tilest[[i]]$area)/A0)-1)^2+
       (gam_ad/2)*(perim_ad[[i]])^2+
@@ -179,7 +179,7 @@ n<-n_adim
 
 r<- wid/n #radio en que cambiamos el punto
 bet<-10
-pasos<-50
+pasos<-100
 
 
 A0<-(wid*(ymax-ymin))/n
@@ -204,7 +204,7 @@ rec<-c(xmin,xmin+3*wid,ymin,ymax)
 teselacion <- deldir(points$x,points$y,rw=rec)
 tiles <- tile.list(teselacion)
 tilescyl<-tiles[(n+1):(2*n)]
-energytesel<-energytes(tilescyl)
+energytesel<-energytes_adim(tilescyl)
 energyinit<-energytesel
 energhist<-data.frame(iteration=0,energy=energyinit)
 
@@ -215,7 +215,7 @@ histpts<-list()
 for (j in 1:pasos) {
   for(l in 1:n) {
     points2<-changepoint3_alg2(points,l)
-    energytesel2<-teselandenergy3(points2$x,points2$y)
+    energytesel2<-teselandenergy3_adim(points2$x,points2$y)
     c<-choice(energytesel2-energytesel)
     if(c==1){
       points<-points2
