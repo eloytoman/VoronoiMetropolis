@@ -167,13 +167,14 @@ trhistpts<-function(histpt){
 #comienza el programa
 
 k<-1
-gam<-1
-lambda<-1
+gam_ad<-0.15
+lambda_ad<-0.4
 xmin<-0
 ymin<-0
-xmax<-10
-ymax<-10
+xmax<-5
+ymax<-20
 wid<-xmax-xmin
+
 n_adim<-100
 n<-n_adim
 
