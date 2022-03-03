@@ -1,2 +1,2 @@
 # VoronoiMetropolis
- Metropolis algorithm in Voronoi Tesselation
+ Metropolis algorithm for Voronoi Tessellations
