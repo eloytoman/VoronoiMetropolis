@@ -180,7 +180,7 @@ n<-n_adim
 
 r<- wid/n #radio en que cambiamos el punto
 bet<-10
-pasos<-50
+pasos<-1000
 
 
 A0<-(wid*(ymax-ymin))/n
@@ -210,8 +210,6 @@ energyinit<-energytesel
 energhist<-data.frame(iteration=0,energy=energyinit)
 
 histpts<-list()
-
-#a?adir un plot aqui
 
 for (j in 1:pasos) {
   for(l in 1:n) {
