@@ -20,18 +20,21 @@ changepoint3<-function(pt){
 
 energytes<-function(tile){
   perim<-tilePerim(tile)$perimeters
-  energycell<-c()
+  energytesel<-c()
   for (i in 1:length(tile)){
-    energycell[i]<-((k/2)*(((tile[[i]]$area)-A0)^2)) #+(gam/2)*(perim[[i]])^2+lambda*perim[[i]]
+    energytesel<-energytesel+((k/2)*(((tile[[i]]$area)-A0)^2))+(gam/2)*(perim[[i]])^2+lambda*perim[[i]]
   }
-  energytesel<-sum(energycell)
   return(energytesel)
 }
 
 teselandenergy3<-function(xt,yt){
   tesel<-deldir(xt,yt,rw=rec)
   tilest<-tile.list(tesel)[(n+1):(2*n)]
-  tesener<-energytes(tilest)
+  perim<-tilePerim(tilest)$perimeters
+  tesener<-c()
+  for (i in 1:n){
+    tesener<-tesener+((k/2)*(((tilest[[i]]$area)-A0)^2))+(gam/2)*(perim[[i]])^2+lambda*perim[[i]]
+  }
   return(tesener)
 }
 
@@ -202,7 +205,7 @@ energhist<-data.frame(iteration=0,energy=energyinit)
 
 histpts<-list()
 
-#añadir un plot aqui
+#a?adir un plot aqui
 
 for (j in 1:pasos) {
   for(l in 1:n) {
