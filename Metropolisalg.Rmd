@@ -1,0 +1,512 @@
+---
+title: "Metropolis' Algorithm"
+author: "Eloy"
+date: "25/2/2022"
+output: html_document
+---
+
+## Description of the algorithm.
+
+The aim of the Metropolis algorithm is to minimise the elastic energy associated with a Voronoi tessellation. To do so, we start from a domain in which we generate $n$ of points (sites) randomly. Then, we construct the Voronoi tessellation $V$ associated to the set of sites, so that we will have $n$ Voronoi regions $R_i$ associated to each point $p_i$, and we calculate their associated elastic energy, according to the following formula
+
+$\displaystyle E(V)=\sum_{i=1}^n \frac{k}{2}(Area(R_i)-A_0)^2+\frac{\gamma}{2} Perim(R_i)^2+\lambda Perim(R_i)$.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
+library(deldir)
+library(ggplot2)
+library(ggvoronoi)
+library(gganimate)
+library(dplyr)
+
+x1 <- runif(50,0,1)
+y1 <- runif(50,0,1)
+rec<-rec<-c(0,1,0,1)
+tesv<-deldir(x1,y1,rw=rec)
+tilesv<-tile.list(tesv)
+plot(tilesv, pch=19, border="white", fillcol=hcl.colors(10,"Blues"))
+```
+
+Once the energy has been calculated, the algorithm starts randomly changing points, calculates the energy associated with the new tessellation, and decides whether to accept the new tessellation or not.
+
+To make this choice, we take into account the difference of the new energy with the previous one, $\Delta E$. If the difference is negative, then we accept the change. If the difference is positive (the energy increases), we accept the new tessellation with probability $p=e^{-\Delta E}$. This completes one iteration. After $n$ iterations, we complete one step of the algorithm.
+
+## Algorithm in a cylindrical domain
+
+As we want to apply the Metropolis algorithm on the surface of a cylinder, we have to make some modifications to ensure some conditions on the contours of the cells, because now the points near the left edge are close to those on the right edge. Therefore the computational solution is to make 2 replicas of the points and work only (i.e. calculate the energy) with those Voronoi regions that have associated points within the central region. This is clearly seen in the graph below.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+x1 <- runif(50,0,1)
+y1 <- runif(50,0,1)
+
+x<-c(x1,x1+1,x1+2)
+y<-c(y1,y1,y1)
+
+rec<-c(0,3,0,1)
+
+tesv<-deldir(x,y,rw=rec)
+  tilesv<-tile.list(tesv)
+  plot(tilesv, pch=19, border="white", fillcol=hcl.colors(10,"Blues"))
+  lines(c(1,1),c(0,1))
+  lines(c(2,2),c(0,1))
+```
+
+## Construction and explanation of the algorithm
+
+The first of these is the function that takes a point $p_i=(x,y)$ randomly and moves it in the rectangle of radius $r$, i.e. it takes a new point in the domain $]x-r,x+r[\times]y-r,y+r[$ . In addition, it makes sure that the new point does not move out of the original domain. Once this point is moved, it also moves the replicas of it.
+
+```{r}
+changepoint3<-function(pt){
+  ind<-sample(1:n,1)
+  ptinx<-pt$x[ind]+rnorm(1,mean=0,sd=r)
+  ptiny<-pt$y[ind]+rnorm(1,mean=0,sd=r)
+  while((ptinx<xmin || ptinx>xmax)||(ptiny<ymin || ptiny>ymax)){
+    ptinx<-pt$x[ind]+runif(1,min=-r,max=r)
+    ptiny<-pt$y[2]+runif(1,min=-r,max=r)
+  }
+  pt$x[c(ind,ind+n,ind+2*n)]<-c(ptinx,ptinx+wid,ptinx+2*wid)
+  pt$y[c(ind,ind+n,ind+2*n)]<-ptiny
+  return(pt)
+}
+
+```
+
+The following two functions calculate the energy associated with a tessellation, the first after passing the tessellation as a parameter, and the second only by passing the points.
+
+```{r}
+energytes<-function(tile){
+  perim<-tilePerim(tile)$perimeters
+  energycell<-c()
+  energyt<-c(0)
+  for (i in 1:length(tile)){
+    energycell[i]<-((k/2)*(((tile[[i]]$area)-A0)^2)) #+(gam/2)*(perim[[i]])^2+lambda*perim[[i]]
+  }
+  energyt<-sum(energycell)
+  return(energyt)
+}
+
+teselandenergy3<-function(xt,yt){
+  tesel<-deldir(xt,yt,rw=rec)
+  tilest<-tile.list(tesel)[(n+1):(2*n)]
+  tesener<-energytes(tilest)
+  return(tesener)
+}
+```
+
+Then it is necessary to decide whether or not to accept the tessellation. To do this, the following function evaluates the difference in energies, and decides whether we accept the change (in which case it returns $1$) or not (and returns $0$).
+
+```{r}
+choice<-function(delta){
+  if(delta<=0){p<-1}else if(exp(-delta*bet)==Inf){p<-0}else{p<-exp(-delta*bet)}
+  
+  a=sample(c(0,1), size = 1,replace=TRUE, prob = c(1-p,p))
+  return(a)
+}
+```
+
+Finally, the following function returns a graph of the Voronoi tessellation associated with the points we enter.
+
+```{r}
+ggplotvor<-function(plotpoints,tit){
+  rectangle <- data.frame(x=c(xmin,xmin,xmax+2*wid,xmax+2*wid),y=c(ymin,ymax,ymax,ymin))
+  pl <- ggplot(plotpoints,aes(x,y)) +
+    geom_voronoi(aes(fill=as.factor(y)),size=.125, outline = rectangle,show.legend = FALSE) +
+    geom_vline(xintercept = xmax,color = 'white',linetype='solid',size=1) +
+    geom_vline(xintercept = xmax+wid,color = 'white',linetype='solid',size=1) +
+    stat_voronoi(geom="path",outline = rectangle) +
+    geom_point(size=2) +
+    theme(
+      panel.grid.major = element_blank() # Remove gridlines (major)
+      ,panel.grid.minor = element_blank() # Remove gridlines (minor)
+      ,panel.background = element_blank() # Remove grey background
+      ,plot.title = element_text(hjust = 0, size = 20, colour = "#323232") # Title size and colour
+      ,plot.caption = element_text(vjust = 0.3, size = 11, colour = "#323232") # Caption size and colour
+      ,axis.ticks.y = element_blank() # Remove tick marks (Y-Axis)
+      ,axis.text.y =  element_blank() # Remove scale marks (Y-Axis)
+      ,axis.title.y = element_blank() # Remove axis label (Y-Axis) 
+      ,axis.ticks.x = element_blank() # Remove tick marks (X-Axis)
+      ,axis.text.x  = element_blank() # Remove axis scale (X-Axis)
+      ,axis.title.x = element_blank() # Remove axis label (X-Axis) 
+      ,legend.position="bottom"
+    ) +
+    labs(title = tit # Title text
+         ,caption = "Author: Eloy Serrano        ")
+  show(pl)
+}
+
+```
+
+### Code
+
+Now let's look at the code of the algorithm itself. First we initialize the constants we will need.
+
+```{r}
+k<-1
+gam<-1
+lambda<-1
+xmin<-0
+ymin<-0
+xmax<-10
+ymax<-10
+wid<-xmax-xmin
+n<-40
+
+r<- wid*2/n #radio en que cambiamos el punto
+bet<-10
+pasos<-50
+
+
+A0<-(wid*(ymax-ymin))/n
+
+```
+
+Then, we take random points in the rectangle and calculate the Voronoi tessellation and the associated energy. We save the initial points in *pointsinit,* and create the variable *energhist* in which we will store the energies of each step of the algorithm.
+
+```{r}
+
+x1 <- runif(n,xmin,xmax)
+y1 <- runif(n,ymin,ymax)
+
+x<-c(x1,x1+wid,x1+2*wid)
+y<-c(y1,y1,y1)
+points<-data.frame(x=x,y=y)
+
+pointsinitmetv1<-points
+
+rec<-c(xmin,xmin+3*wid,ymin,ymax)
+
+teselacion <- deldir(points$x,points$y,rw=rec)
+tiles <- tile.list(teselacion)
+tilescyl<-tiles[(n+1):(2*n)]
+energytesel<-energytes(tilescyl)
+energyinit<-energytesel
+energhist<-data.frame(iteration=0,energy=energyinit)
+
+histpts<-list()
+```
+
+Once the initial tessellation has been calculated, with the help of the functions defined above, we create a *for* loop that iterates according to Metropolis.
+
+```{r}
+for (j in 1:pasos) {
+  for(l in 1:n) {
+    points2<-changepoint3(points)
+    energytesel2<-teselandenergy3(points2$x,points2$y)
+    c<-choice(energytesel2-energytesel)
+    if(c==1){
+      points<-points2
+      energytesel<-energytesel2
+      histpts[[j*l]]<-list(points,energytesel)
+    }
+  }
+    energhist[j+1,c(1,2)]<-c(j,energytesel)
+}
+energymetropolis1<-energhist
+pointsmetv1<-points
+energyinit
+energytesel
+histpts<-Filter(Negate(is.null), histpts)
+```
+
+Once the algorithm is finished, we plot the graphs we are interested in
+
+```{r}
+ggplotvor(pointsinitmetv1, "       Initial Voronoi Tesselation")
+
+ggplotvor(pointsmetv1,"       Final Voronoi Tesselation")
+
+#areasideplots(points)
+#plotenergy(energhist)
+```
+
+## Second version of the algorithm.
+
+This other version of the algorithm, in each step, changes all the points of the tessellation, unlike the first version, which also made $n$ changes but not necessarily of all the places. To do this, we modify the function that moves the points.
+
+```{r}
+changepoint3_alg2<-function(pt,ind){
+  ptinx<-pt$x[ind]+rnorm(1,mean=0,sd=r)
+  ptiny<-pt$y[ind]+rnorm(1,mean=0,sd=r)
+  while((ptinx<xmin || ptinx>xmax)||(ptiny<ymin || ptiny>ymax)){
+    ptinx<-pt$x[ind]+rnorm(1,mean=0,sd=r)
+    ptiny<-pt$y[ind]+rnorm(1,mean=0,sd=r)
+  }
+  pt$x[c(ind,ind+n,ind+2*n)]<-c(ptinx,ptinx+wid,ptinx+2*wid)
+  pt$y[c(ind,ind+n,ind+2*n)]<-ptiny
+  return(pt)
+}
+```
+
+The rest of the algorithm is the same, and we have the following code.
+
+```{r}
+rm(x1,x,y1,y,points,teselacion,tiles,tilescyl,energytesel,energyinit,energhist,histpts)
+x1 <- runif(n,xmin,xmax)
+y1 <- runif(n,ymin,ymax)
+x<-c(x1,x1+wid,x1+2*wid)
+y<-c(y1,y1,y1)
+points<-data.frame(x=x,y=y)
+
+pointsinitmetv2<-points
+
+rec<-c(xmin,xmin+3*wid,ymin,ymax)
+
+teselacion <- deldir(points$x,points$y,rw=rec)
+tiles <- tile.list(teselacion)
+tilescyl<-tiles[(n+1):(2*n)]
+energytesel<-energytes(tilescyl)
+energyinit<-energytesel
+energhist<-data.frame(iteration=0,energy=energyinit)
+
+histpts<-list()
+
+for (j in 1:pasos) {
+  for(l in 1:n) {
+    points2<-changepoint3_alg2(points,l)
+    energytesel2<-teselandenergy3(points2$x,points2$y)
+    c<-choice(energytesel2-energytesel)
+    if(c==1){
+      points<-points2
+      energytesel<-energytesel2
+      histpts[[j*l]]<-list(points,energytesel)
+    }
+  }
+  energhist[j+1,c(1,2)]<-c(j,energytesel)
+}
+energymetropolis2<-energhist
+energyinit
+energytesel
+pointsmetv2<-points
+
+
+ggplotvor(pointsinitmetv2, "       Initial Voronoi Tesselation")
+
+ggplotvor(pointsmetv2,"       Final Voronoi Tesselation")
+```
+
+In order to compare the two algorithms, we create the following function, which takes two vectors that store the energy and plots them.
+
+```{r}
+library(ggplot2)
+plotcompener<-function(en1,en2,name1,name2){
+  #After introducing the energy vector of lloyd and metropolis algorithm,
+  #this function makes the combined plot of both energies.
+  m=length(en1$iteration)
+  energy<-en1
+  energy[(m+1):(2*m),c(1,2)]<-en2
+  energy[1:m,3]<-name1
+  energy[(m+1):(2*m),3]<-name2
+  colnames(energy)<-c("iteration","energy","algorithm")
+  
+  p<-ggplot(energy,aes(x=iteration, y=energy, color=algorithm))+
+    geom_line()+
+    xlab("Iteration of the algorithm")+
+    ylab("Tesselation energy")+
+    ggtitle("Energy relaxation of the tesselation by algorithms")
+  show(p)
+}
+plotcompener(energymetropolis1,energymetropolis2,"Metropolis' algorithm, V1","Metropolis' algorithm, V2")
+```
+
+## Comparison with Lloyd's algorithm.
+
+Lloyd's algorithm is used to calculate the centroidal Voronoi tessellation. The algorithm works as follows. Take $n$ sites randomly in the desired domain, and calculate the Voronoi tessellation. Then, the centroid of each Voronoi cell $R_i$ is calculated, and the tessellation is re-tessellated using these centroids as starting points. This completes one iteration. After $n$, it is interesting to see if Lloyd's algorithm is effective in relaxing the elastic energy associated with the tessellation. To do this, we have created the following code. The *lloydpoints* function checks that the centroids do not go outside the cylinder.
+
+```{r}
+
+lloydpoints<-function(x){
+  if(x-wid>xmax){x<-x-wid}else if(x-wid<xmin){x<-x+wid}else{x}
+}
+
+x1 <- runif(n,xmin,xmax)
+y1 <- runif(n,ymin,ymax)
+
+x<-c(x1,x1+wid,x1+2*wid)
+y<-c(y1,y1,y1)
+points<-data.frame(x=x,y=y)
+
+ptsinitx<-x
+ptsinity<-y
+pointsinit<-data.frame(x=ptsinitx,y=ptsinity)
+
+rec<-c(xmin,xmin+3*wid,ymin,ymax)
+
+teselacion <- deldir(points$x,points$y,rw=rec)
+tiles <- tile.list(teselacion)
+tilescyl<-tiles[(n+1):(2*n)]
+energytesel<-energytes(tilescyl)
+energyinit<-energytesel
+energhist<-data.frame(iteration=0,energy=energyinit)
+
+for (j in 1:pasos) {
+  teselacion <- deldir(points$x,points$y,rw=rec)
+  tiles <- tile.list(teselacion)
+  tilescyl<-tiles[(n+1):(2*n)]
+  energytesel<-energytes(tilescyl)
+  energhist[j+1,c(1,2)]<-c(j,energytesel)
+  
+  centroids<-tile.centroids(tiles)[(n+1):(2*n),c(1,2)]
+  centroids$x<-unlist(sapply(centroids$x,lloydpoints))
+  centroids1<-centroids
+  centroids1$x<-centroids1$x-wid
+  centroids2<-centroids
+  centroids2$x<-centroids$x+wid
+  points[1:n,c(1,2)]<-centroids1
+  points[(n+1):(2*n),c(1,2)]<-centroids
+  points[(2*n+1):(3*n),c(1,2)]<-centroids2
+}
+pointslloyd<-points
+energylloyd<-energhist
+energyinit
+energytesel
+
+ggplotvor(pointsinit,"       Initial Voronoi Tesselation (Lloyd)")
+
+ggplotvor(pointslloyd,"       Final Voronoi Tesselation (Lloyd)")
+```
+
+Furthermore, with the function described above, we can compare the Lloyd's algorithm with the Metropolis algorithm.
+
+```{r}
+
+plotcompener(energylloyd,energymetropolis1,"Lloyd's algorithm","Metropolis' algorithm, V1")
+```
+
+## Graphics associated with tessellation.
+
+To study the results, it is important to see if Lewis' law, which says that the area of the cells is proportional to the number of sides, is fulfilled. We also want to study the distribution of the number of sides of each cell. To do this, we create the following function.
+
+```{r}
+areasideplots<-function(xy){
+  tsl<-deldir(xy$x,xy$y,rw=rec)
+  til<-tile.list(tsl)
+  #Lwlw<-lawSummary(tsl)
+  #option1
+  celledgearea<-data.frame()
+  for (i in 1:length(til)) {
+    celledgearea[i,c(1,2)]<-c(length(til[[i]]$x),til[[i]]$area/A0)
+  }
+  #option2
+  #celledgearea<-data.frame(Lwlw$num.edges,Lwlw$tile.areas/A0)
+  colnames(celledgearea)<-c("edges","area")
+  plotareaedges<-ggplot(celledgearea, aes(x = edges, y = area, colour = area))+
+    geom_point()+xlab("Number of sides")+ylab("Relative area")+
+    ggtitle("Relative area of the cells by sides")+
+    stat_summary(aes(y = area,group=1), fun=mean, colour="#00BFC4", geom="line",group=1)
+  show(plotareaedges)
+  
+  histedges<-ggplot(celledgearea,aes(edges))+geom_histogram(colour="#F8766D" ,fill="#7CAE00",bins=10,alpha=0.6)+
+    xlab("Number of edges")+ylab("Frequency")+
+    ggtitle("Quantity of sides of the cells")+
+    xlim(2,11)
+  show(histedges)
+  
+}
+```
+
+It is also interesting to see the Voronoi tessellation corresponding to the lowest energy of the system. For this we create the following function.
+
+```{r}
+plotminener<-function(histpt){
+  #Lets draw the tesselation corresponding with minimum energy
+  energhist<-list()
+  for (i in 1:length(histpt)) {
+    energhist[[i]]<-histpt[[i]][[2]]
+  }
+  indmin<-which.min(unlist(energhist))
+  ptsmin<-histpt[[indmin]][[1]]
+  plotvor3(ptsmin$x,ptsmin$y)
+}
+
+```
+
+Script to save video
+
+```{r eval=FALSE, message=TRUE, warning=TRUE, include=FALSE, paged.print=FALSE}
+# Load libraries
+library(ggvoronoi)
+library(gganimate)
+library(dplyr)
+
+# Load data source and give columns names
+ptshist_df<-trhistpts(histpts)
+
+
+# Filtering for just first frame
+ff_total <- filter(ptshist_df, Frame == 1)
+
+# Defining pitch size for voronoi plot
+rectangle <- data.frame(x=c(xmin,xmin,xmax+2*wid,xmax+2*wid),y=c(ymin,ymax,ymax,ymin))
+
+# Make first frame and test what image looks like
+ff <- ggplot(ff_total,aes(x,y)) +
+  geom_voronoi(aes(fill=as.factor(y)),size=.125, outline = rectangle,show.legend = FALSE) +
+  geom_vline(xintercept = xmax,color = 'white',linetype='solid',size=0.5) +
+  geom_vline(xintercept = xmax+wid,color = 'white',linetype='solid',size=0.5) +
+  stat_voronoi(geom="path",outline = rectangle) +
+  geom_point(size=3) +
+  theme(
+    panel.grid.major = element_blank() # Remove gridlines (major)
+    ,panel.grid.minor = element_blank() # Remove gridlines (minor)
+    ,panel.background = element_blank() # Remove grey background
+    ,plot.title = element_text(hjust = 0, size = 20, colour = "#323232") # Title size and colour
+    ,plot.subtitle = element_text(hjust = 0, size = 14, colour = "#323232") # Subtitle size and colour
+    ,plot.caption = element_text(vjust = 0.3, size = 11, colour = "#323232") # Caption size and colour
+    ,axis.ticks.y = element_blank() # Remove tick marks (Y-Axis)
+    ,axis.text.y =  element_blank() # Remove scale marks (Y-Axis)
+    ,axis.title.y = element_blank() # Remove axis label (Y-Axis) 
+    ,axis.ticks.x = element_blank() # Remove tick marks (X-Axis)
+    ,axis.text.x  = element_blank() # Remove axis scale (X-Axis)
+    ,axis.title.x = element_blank() # Remove axis label (X-Axis) 
+    ,legend.position="bottom"
+  ) +
+  labs(title = "      Evolution of the Voronoi Tesselation" # Title text
+       ,subtitle = "         Metropolis' Algorithm"
+       ,caption = "Author: Eloy Serrano       ")
+
+# Create test image
+ggsave(filename = paste0("frame_",1,".png") # filename
+       ,plot = ff # variable for file
+       ,width = 10, height = 4, dpi = 300, units = "in") # dimensions and image quality
+#This will generate an image “test.png” which you can check whether this is the output you want for you gif, if not amend the code above.
+
+
+# Loop through all frames
+for(i in (min(ptshist_df$Frame):max(ptshist_df$Frame))){
+  
+  frame <- filter(ptshist_df, Frame == 1)
+  
+    plot <- ggplot(frame,aes(x,y)) +
+    geom_voronoi(aes(fill=as.factor(y)),size=.125, outline = rectangle,show.legend = FALSE) +
+    geom_vline(xintercept = xmax,color = 'white',linetype='solid',size=0.5) +
+    geom_vline(xintercept = xmax+wid,color = 'white',linetype='solid',size=0.5) +
+    stat_voronoi(geom="path",outline = rectangle) +
+    geom_point(size=3) +
+    theme(
+      panel.grid.major = element_blank() # Remove gridlines (major)
+      ,panel.grid.minor = element_blank() # Remove gridlines (minor)
+      ,panel.background = element_blank() # Remove grey background
+      ,plot.title = element_text(hjust = 0, size = 20, colour = "#323232") # Title size and colour
+      ,plot.subtitle = element_text(hjust = 0, size = 14, colour = "#323232") # Subtitle size and colour
+      ,plot.caption = element_text(vjust = 0.3, size = 11, colour = "#323232") # Caption size and colour
+      ,axis.ticks.y = element_blank() # Remove tick marks (Y-Axis)
+      ,axis.text.y =  element_blank() # Remove scale marks (Y-Axis)
+      ,axis.title.y = element_blank() # Remove axis label (Y-Axis) 
+      ,axis.ticks.x = element_blank() # Remove tick marks (X-Axis)
+      ,axis.text.x  = element_blank() # Remove axis scale (X-Axis)
+      ,axis.title.x = element_blank() # Remove axis label (X-Axis) 
+      ,legend.position="bottom"
+    ) +
+    labs(title = "      Evolution of the Voronoi Tesselation" # Title text
+         ,subtitle = "         Metropolis' Algorithm"
+         ,caption = "Author: Eloy Serrano       ")
+  
+  # Create test image
+  ggsave(filename = paste0("frame_",i,".png") # filename
+         ,plot = plot # variable for file
+         ,width = 10, height = 4, dpi = 300, units = "in") # dimensions and image quality
+  #This will generate an image “test.png” which you can check whether this is the output you want for you gif, if not amend the code above.
+  
+  # Writing print to console so you can check where the code is
+  print(paste0("Frame: ",i," done!"))
+}
+```
