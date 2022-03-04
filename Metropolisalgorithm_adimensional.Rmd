@@ -173,7 +173,7 @@ n<-n_adim
 
 r<- wid/n #radio en que cambiamos el punto
 bet<-10
-pasos<-5
+pasos<-100
 
 
 A0<-(wid*(ymax-ymin))/n
@@ -189,7 +189,7 @@ x<-c(x1,x1+wid,x1+2*wid)
 y<-c(y1,y1,y1)
 points<-data.frame(x=x,y=y)
 
-pointsinitmetv1<-points
+pointsinit<-points
 
 rec<-c(xmin,xmin+3*wid,ymin,ymax)
 
@@ -228,12 +228,9 @@ histpts<-Filter(Negate(is.null), histpts)
 Once the algorithm is finished, we plot the graphs we are interested in
 
 ```{r}
-ggplotvor(pointsinitmetv1, "       Initial Voronoi Tesselation")
+ggplotvor(pointsinit, "       Initial Voronoi Tesselation")
 
 ggplotvor(pointsmetv1,"       Final Voronoi Tesselation")
-
-#areasideplots(points)
-#plotenergy(energhist)
 ```
 
 ## Second version of the algorithm.
@@ -257,20 +254,7 @@ changepoint3_alg2<-function(pt,ind){
 The rest of the algorithm is the same, and we have the following code.
 
 ```{r}
-rm(x1,x,y1,y,points,teselacion,tiles,tilescyl,energytesel,energyinit,energhist,histpts)
-x1 <- runif(n,xmin,xmax)
-y1 <- runif(n,ymin,ymax)
-
-x<-c(x1,x1+wid,x1+2*wid)
-y<-c(y1,y1,y1)
-points<-data.frame(x=x,y=y)
-
-pointsinitmetv2<-points
-
-#histpts<-rep(list(list()), pasos)
-#histpts<-vector(mode="logical",length=pasos)
-#histpts[[1]]<-c(x,y)
-#para guardar los puntos que se van generando
+points<-pointsinit
 
 rec<-c(xmin,xmin+3*wid,ymin,ymax)
 
@@ -282,8 +266,6 @@ energyinitmetv2<-energytesel
 energhist<-data.frame(iteration=0,energy=energyinitmetv2)
 
 histpts<-list()
-
-#a?adir un plot aqui
 
 for (j in 1:pasos) {
   for(l in 1:n) {
@@ -304,7 +286,7 @@ histpts<-Filter(Negate(is.null), histpts)
 energymetropolis2<-energhist
 pointsmetv2<-points
 
-ggplotvor(pointsinitmetv2, "       Initial Voronoi Tesselation")
+ggplotvor(pointsinit, "       Initial Voronoi Tesselation")
 
 ggplotvor(pointsmetv2,"       Final Voronoi Tesselation")
 ```
@@ -348,11 +330,7 @@ y1 <- runif(n,ymin,ymax)
 
 x<-c(x1,x1+wid,x1+2*wid)
 y<-c(y1,y1,y1)
-points<-data.frame(x=x,y=y)
-
-ptsinitx<-x
-ptsinity<-y
-pointsinitlloyd<-data.frame(x=ptsinitx,y=ptsinity)
+points<-pointsinit
 
 rec<-c(xmin,xmin+3*wid,ymin,ymax)
 
