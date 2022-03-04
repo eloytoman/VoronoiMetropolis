@@ -325,11 +325,6 @@ lloydpoints<-function(x){
   if(x-wid>xmax){x<-x-wid}else if(x-wid<xmin){x<-x+wid}else{x}
 }
 
-x1 <- runif(n,xmin,xmax)
-y1 <- runif(n,ymin,ymax)
-
-x<-c(x1,x1+wid,x1+2*wid)
-y<-c(y1,y1,y1)
 points<-pointsinit
 
 rec<-c(xmin,xmin+3*wid,ymin,ymax)
