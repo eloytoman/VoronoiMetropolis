@@ -1,0 +1,7 @@
+
+*.pper
+.Rproj.user/CC203444/build_options
+.Rproj.user/CC203444/rmd-outputs
+*.png
+*.json
+.Rhistory
