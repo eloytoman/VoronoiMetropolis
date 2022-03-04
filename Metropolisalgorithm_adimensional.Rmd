@@ -173,7 +173,7 @@ n<-n_adim
 
 r<- wid/n #radio en que cambiamos el punto
 bet<-10
-pasos<-50
+pasos<-5
 
 
 A0<-(wid*(ymax-ymin))/n
@@ -189,7 +189,7 @@ x<-c(x1,x1+wid,x1+2*wid)
 y<-c(y1,y1,y1)
 points<-data.frame(x=x,y=y)
 
-pointsinit<-points
+pointsinitmetv1<-points
 
 rec<-c(xmin,xmin+3*wid,ymin,ymax)
 
@@ -197,8 +197,8 @@ teselacion <- deldir(points$x,points$y,rw=rec)
 tiles <- tile.list(teselacion)
 tilescyl<-tiles[(n+1):(2*n)]
 energytesel<-energytes_adim(tilescyl)
-energyinit<-energytesel
-energhist<-data.frame(iteration=0,energy=energyinit)
+energyinitmetv1<-energytesel
+energhist<-data.frame(iteration=0,energy=energyinitmetv1)
 histpts<-list()
 ```
 
@@ -218,6 +218,8 @@ for (j in 1:pasos) {
   }
   energhist[j+1,c(1,2)]<-c(j,energytesel)
 }
+energyinitmetv1
+energytesel
 energymetropolis1<-energhist
 pointsmetv1<-points
 histpts<-Filter(Negate(is.null), histpts)
@@ -263,7 +265,7 @@ x<-c(x1,x1+wid,x1+2*wid)
 y<-c(y1,y1,y1)
 points<-data.frame(x=x,y=y)
 
-pointsinit<-points
+pointsinitmetv2<-points
 
 #histpts<-rep(list(list()), pasos)
 #histpts<-vector(mode="logical",length=pasos)
@@ -276,8 +278,8 @@ teselacion <- deldir(points$x,points$y,rw=rec)
 tiles <- tile.list(teselacion)
 tilescyl<-tiles[(n+1):(2*n)]
 energytesel<-energytes_adim(tilescyl)
-energyinit<-energytesel
-energhist<-data.frame(iteration=0,energy=energyinit)
+energyinitmetv2<-energytesel
+energhist<-data.frame(iteration=0,energy=energyinitmetv2)
 
 histpts<-list()
 
@@ -296,7 +298,7 @@ for (j in 1:pasos) {
   }
   energhist[j+1,c(1,2)]<-c(j,energytesel)
 }
-energyinit
+energyinitmetv2
 energytesel
 histpts<-Filter(Negate(is.null), histpts)
 energymetropolis2<-energhist
@@ -337,6 +339,10 @@ Lloyd's algorithm is used to calculate the centroidal Voronoi tessellation. The 
 
 ```{r}
 
+lloydpoints<-function(x){
+  if(x-wid>xmax){x<-x-wid}else if(x-wid<xmin){x<-x+wid}else{x}
+}
+
 x1 <- runif(n,xmin,xmax)
 y1 <- runif(n,ymin,ymax)
 
@@ -346,7 +352,7 @@ points<-data.frame(x=x,y=y)
 
 ptsinitx<-x
 ptsinity<-y
-pointsinit<-data.frame(x=ptsinitx,y=ptsinity)
+pointsinitlloyd<-data.frame(x=ptsinitx,y=ptsinity)
 
 rec<-c(xmin,xmin+3*wid,ymin,ymax)
 
@@ -382,9 +388,9 @@ energyinit
 energytesel
 #histpts<-Filter(Negate(is.null), histpts)
 
-ggplotvor(pointsinit, "       Initial Voronoi Tesselation")
+ggplotvor(pointsinitlloyd, "       Initial Voronoi Tesselation")
 
-ggplotvor(points,"       Final Voronoi Tesselation")
+ggplotvor(pointslloyd,"       Final Voronoi Tesselation")
 ```
 
 Furthermore, with the function described above, we can compare the Lloyd's algorithm with the Metropolis algorithm.
@@ -425,6 +431,9 @@ areasideplots<-function(xy){
   show(histedges)
   
 }
+areasideplots(pointsmetv1)
+areasideplots(pointsmetv2)
+areasideplots(pointslloyd)
 ```
 
 It is also interesting to see the Voronoi tessellation corresponding to the lowest energy of the system. For this we create the following function.
