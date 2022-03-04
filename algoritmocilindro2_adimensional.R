@@ -179,7 +179,7 @@ n<-n_adim
 
 r<- wid/n #radio en que cambiamos el punto
 bet<-10
-pasos<-100
+pasos<-300
 
 
 A0<-(wid*(ymax-ymin))/n

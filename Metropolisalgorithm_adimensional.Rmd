@@ -361,7 +361,7 @@ energyinit
 energytesel
 #histpts<-Filter(Negate(is.null), histpts)
 
-ggplotvor(pointsinitlloyd, "       Initial Voronoi Tesselation")
+ggplotvor(pointsinit, "       Initial Voronoi Tesselation")
 
 ggplotvor(pointslloyd,"       Final Voronoi Tesselation")
 ```
