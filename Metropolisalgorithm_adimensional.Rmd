@@ -182,6 +182,7 @@ A0<-(wid*(ymax-ymin))/n
 Then, we take random points in the rectangle and calculate the Voronoi tessellation and the associated energy. We save the initial points in *pointsinit,* and create the variable *energhist* in which we will store the energies of each step of the algorithm.
 
 ```{r}
+set.seed(666)
 x1 <- runif(n,xmin,xmax)
 y1 <- runif(n,ymin,ymax)
 
