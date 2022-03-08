@@ -110,7 +110,6 @@ plotenergy<-function(en){
     xlab("Iteration of the algorithm")+
     scale_y_continuous(name="Tesselation energy", trans="log")+
     ggtitle("Energy relaxation of the tesselation")
-    
   show(ploten)
 }
 
@@ -173,7 +172,7 @@ n<-n_adim
 
 r<- wid/n #radio en que cambiamos el punto
 bet<-10
-pasos<-10
+pasos<-5
 
 
 A0<-(wid*(ymax-ymin))/n
@@ -221,6 +220,7 @@ for (j in 1:pasos) {
       energytesel<-energytesel2
     }
   }
+  gc()
   histpts[(j*3*n+1):(j*3*n+3*n),c(1,2)]<-points
   histpts[(j*3*n+1):(j*3*n+3*n),3]<-j+1
   energhist[j+1,c(1,2)]<-c(j,energytesel)
