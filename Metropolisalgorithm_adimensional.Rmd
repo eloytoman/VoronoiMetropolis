@@ -161,7 +161,7 @@ Now let's look at the code of the algorithm itself. First we initialize the cons
 ```{r}
 k<-1
 gam_ad<-0.15
-lambda_ad<-0.4
+lambda_ad<-0.04
 xmin<-0
 ymin<-0
 xmax<-5
@@ -173,7 +173,7 @@ n<-n_adim
 
 r<- wid/n #radio en que cambiamos el punto
 bet<-10
-pasos<-100
+pasos<-150
 
 
 A0<-(wid*(ymax-ymin))/n
@@ -182,7 +182,6 @@ A0<-(wid*(ymax-ymin))/n
 Then, we take random points in the rectangle and calculate the Voronoi tessellation and the associated energy. We save the initial points in *pointsinit,* and create the variable *energhist* in which we will store the energies of each step of the algorithm.
 
 ```{r}
-set.seed(666)
 x1 <- runif(n,xmin,xmax)
 y1 <- runif(n,ymin,ymax)
 
@@ -221,7 +220,7 @@ for (j in 1:pasos) {
 }
 energyinitmetv1
 energytesel
-energymetropolis1<-energhist
+energymetropolis1<-energhist/n
 pointsmetv1<-points
 histpts<-Filter(Negate(is.null), histpts)
 ```
@@ -284,7 +283,7 @@ for (j in 1:pasos) {
 energyinitmetv2
 energytesel
 histpts<-Filter(Negate(is.null), histpts)
-energymetropolis2<-energhist
+energymetropolis2<-energhist/n
 pointsmetv2<-points
 
 ggplotvor(pointsinit, "       Initial Voronoi Tesselation")
@@ -292,7 +291,7 @@ ggplotvor(pointsinit, "       Initial Voronoi Tesselation")
 ggplotvor(pointsmetv2,"       Final Voronoi Tesselation")
 ```
 
-In order to compare the two algorithms, we create the following function, which takes two vectors that store the energy and plots them.
+In order to compare the two algorithms, we create the following function, which takes two vectors that store the energy and plots them. We also introduce a logarithmic scale in the $y$ axis, so that we can see clearly the behaviour of the relaxations.
 
 ```{r}
 library(ggplot2)
@@ -309,7 +308,7 @@ plotcompener<-function(en1,en2,name1,name2){
   p<-ggplot(energy,aes(x=iteration, y=energy, color=algorithm))+
     geom_line()+
     xlab("Iteration of the algorithm")+
-    ylab("Tesselation energy")+
+    scale_y_continuous(name="Tesselation energy", trans="log")+
     ggtitle("Energy relaxation of the tesselation by algorithms")
   show(p)
 }
@@ -356,7 +355,7 @@ for (j in 1:pasos) {
 }
 
 pointslloyd<-points
-energylloyd<-energhist
+energylloyd<-energhist/n
 
 energyinit
 energytesel
