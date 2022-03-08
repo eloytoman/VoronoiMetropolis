@@ -20,12 +20,8 @@ changepoint3<-function(pt){
 
 energytes_adim<-function(tile){
   perim_ad<-(tilePerim(tile)$perimeters)/sqrt(A0)
-  energytesel<-c(0)
-  for (i in 1:length(tile)){
-    energytesel<-energytesel+(((tile[[i]]$area)/A0)-1)^2+
-      (gam_ad/2)*(perim_ad[[i]])^2+
-      lambda_ad*perim_ad[[i]]
-  }
+  areas_ad<-sapply(tile,function(x){x$area})/A0
+  energytesel<-sum((areas_ad-1)^2+(gam_ad/2)*perim_ad+lambda_ad*perim_ad)
   return(energytesel)
 }
 
@@ -33,13 +29,8 @@ teselandenergy3_adim<-function(xt,yt){
   tesel<-deldir(xt,yt,rw=rec)
   tilest<-tile.list(tesel)[(n+1):(2*n)]
   perim_ad<-(tilePerim(tilest)$perimeters)/sqrt(A0)
-  cellener<-numeric(n)
-  for (i in 1:n){
-    cellener[i]<-(((tilest[[i]]$area)/A0)-1)^2+
-      (gam_ad/2)*(perim_ad[[i]])^2+
-      lambda_ad*perim_ad[[i]]
-  }
-  tesener<-sum(cellener)
+  areas_ad<-sapply(tilest,function(x){x$area})/A0
+  tesener<-sum((areas_ad-1)^2+(gam_ad/2)*perim_ad+lambda_ad*perim_ad)
   return(tesener)
 }
 
@@ -215,6 +206,8 @@ histpts<-data.frame(matrix(ncol=3,nrow=3*n*pasos))
 names(histpts)<-c("x","y","Frame")
 histpts[1:(3*n),c(1,2)]<-points
 histpts[1:(3*n),3]<-1
+points2<-data.frame(x=x,y=y)
+energytes
 
 for (j in 1:pasos) {
   for(l in 1:n) {
