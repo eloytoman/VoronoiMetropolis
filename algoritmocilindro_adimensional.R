@@ -4,6 +4,7 @@ library(ggvoronoi)
 library(gganimate)
 library(dplyr)
 library(plotly)
+library(data.table)
 
 changepoint3<-function(pt){
   ind<-sample(1:n,1)
@@ -172,7 +173,8 @@ n<-n_adim
 
 r<- wid/n #radio en que cambiamos el punto
 bet<-10
-pasos<-5
+pasos<-100
+
 
 
 A0<-(wid*(ymax-ymin))/n
@@ -233,10 +235,10 @@ energytesel
 
 #plotvor3(pointsinit$x,pointsinit$y)
 
-ggplotvor(pointsinit, "       Initial Voronoi Tesselation")
+#ggplotvor(pointsinit, "       Initial Voronoi Tesselation")
 
-ggplotvor(points,"       Final Voronoi Tesselation")
+#ggplotvor(points,"       Final Voronoi Tesselation")
 
-areasideplots(points)
+#areasideplots(points)
 energhist<-energhist/n #we plot mean cell energy
 plotenergy(energhist)

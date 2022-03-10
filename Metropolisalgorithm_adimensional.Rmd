@@ -424,3 +424,8 @@ plotminener<-function(histpt){
 }
 
 ```
+
+Finally, we save all the data so that we can access to it later
+```{r}
+save(list=ls(),file="data.Rds")
+```
