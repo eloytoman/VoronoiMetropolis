@@ -161,7 +161,7 @@ trhistpts<-function(histpt){
 #comienza el programa
 
 gam_ad<-0.15
-lambda_ad<-0.4
+lambda_ad<-0.04
 xmin<-0
 ymin<-0
 xmax<-5
