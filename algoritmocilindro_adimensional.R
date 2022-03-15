@@ -160,7 +160,6 @@ trhistpts<-function(histpt){
 
 #comienza el programa
 
-k<-1
 gam_ad<-0.15
 lambda_ad<-0.4
 xmin<-0
@@ -189,11 +188,6 @@ y<-c(y1,y1,y1)
 points<-data.frame(x=x,y=y)
 
 pointsinit<-points
-
-#histpts<-rep(list(list()), pasos)
-#histpts<-vector(mode="logical",length=pasos)
-#histpts[[1]]<-c(x,y)
-#para guardar los puntos que se van generando
 
 rec<-c(xmin,xmin+3*wid,ymin,ymax)
 
