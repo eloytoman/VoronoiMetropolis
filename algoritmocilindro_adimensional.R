@@ -109,7 +109,8 @@ plotenergy<-function(en){
   ploten<-ggplot(en,aes(x=iteration,y=energy))+
     geom_line(colour="#F8766D")+
     xlab("Iteration of the algorithm")+
-    scale_y_continuous(name="Tesselation energy", trans="log")+
+    ylab("Tesselation energy")+
+    scale_x_continuous(trans = "log")+
     ggtitle("Energy relaxation of the tesselation")
   show(ploten)
 }
@@ -173,7 +174,7 @@ n<-n_adim
 
 r<- wid/n #radio en que cambiamos el punto
 bet<-10
-pasos<-100
+pasos<-300
 
 
 
@@ -240,5 +241,5 @@ energytesel
 #ggplotvor(points,"       Final Voronoi Tesselation")
 
 #areasideplots(points)
-energhist<-energhist/n #we plot mean cell energy
+energhist$energy<-energhist$energy/n #we plot mean cell energy
 plotenergy(energhist)

@@ -4,8 +4,7 @@ library(gganimate)
 library(dplyr)
 
 # Load data source and give columns names
-ptshist_df<-trhistpts(histpts)
-
+ptshist_df<-histpts
 
 # Filtering for just first frame
 ff_total <- filter(ptshist_df, Frame == 1)
@@ -49,7 +48,7 @@ ggsave(filename = paste0("frame_",1,".png") # filename
 # Loop through all frames
 for(i in (min(ptshist_df$Frame):max(ptshist_df$Frame))){
   
-  frame <- filter(ptshist_df, Frame == 1)
+  frame <- filter(ptshist_df, Frame == i)
   
     plot <- ggplot(frame,aes(x,y)) +
     geom_voronoi(aes(fill=as.factor(y)),size=.125, outline = rectangle,show.legend = FALSE) +
@@ -79,7 +78,7 @@ for(i in (min(ptshist_df$Frame):max(ptshist_df$Frame))){
   # Create test image
   ggsave(filename = paste0("frame_",i,".png") # filename
          ,plot = plot # variable for file
-         ,width = 10, height = 4, dpi = 300, units = "in") # dimensions and image quality
+         ,width = 10, height = 7, dpi = 300, units = "in") # dimensions and image quality
   #This will generate an image "test.png" which you can check whether this is the output you want for you gif, if not amend the code above.
   
   # Writing print to console so you can check where the code is
