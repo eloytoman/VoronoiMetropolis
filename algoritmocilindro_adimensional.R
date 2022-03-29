@@ -5,6 +5,8 @@ library(gganimate)
 library(dplyr)
 library(plotly)
 library(data.table)
+library(stats)
+library(nls.multstart)
 
 changepoint3<-function(pt){
   ind<-sample(1:n,1)
@@ -79,9 +81,24 @@ ggplotvor<-function(plotpoints,tit){
   show(pl)
 }
 
+byareaenergy<-function(points){
+  tesel<-deldir(xt,yt,rw=rec)
+  tilest<-tile.list(tesel)[(n+1):(2*n)]
+  areas<-sapply(tilest,function(x){x$area})
+  areas3<-c(areas,areas,areas)
+  points[,3]<-areas3
+  
+  perim_ad<-(tilePerim(tilest)$perimeters)/sqrt(A0)
+  areas_ad<-areas/A0
+  encells<-(areas_ad-1)^2+(gam_ad/2)*perim_ad+lambda_ad*perim_ad
+  encells3<-c(encells,encells,encells)
+  
+  names(points)<-c("x","y","area")
+}
+
 areasideplots<-function(xy){
   tsl<-deldir(xy$x,xy$y,rw=rec)
-  til<-tile.list(tsl)
+  til<-tile.list(tsl)[(n+1):(2*n)]
   #Lwlw<-lawSummary(tsl)
   #option1
   celledgearea<-data.frame()
@@ -105,12 +122,93 @@ areasideplots<-function(xy){
   
 }
 
+funaux<-function(p){
+  tsl<-deldir(p$x,p$y,rw=rec)
+  til<-tile.list(tsl)
+  celledgearea<-data.frame(edges=integer(),area=double())
+  for (i in 1:n) {
+    celledgearea[i,c(1,2)]<-c(length(til[[i+n]]$x),til[[i+n]]$area/A0)
+  }
+  return (celledgearea)
+}
+
+funaux2<-function(histpt){
+  ps<-250
+  pts<-histpt[(350*3*n+1):((350+ps)*3*n),c(1,2,3)]
+  edgear<-data.frame(edges=integer(),area=double(),Frame=Integer())
+  for (i in 1:ps) {
+    a<-length(edgear$edges)
+    edgear[(a+1):(a+n),c(1,2)]<-funaux(pts[((i-1)*(3*n)+1):(i*3*n),c(1,2)])
+    edgear[(a+1):(a+n),3]<-i
+  }
+  return(edgear)
+}
+
+stationarylewis<-function(edgear){
+  #First execute funaux2 with the data, then this function makes the plots.
+  plotareaedges<-ggplot(edgear, aes(x = edges, y = area, colour = area))+
+    geom_point()+xlab("Number of sides")+ylab("Relative area")+
+    ggtitle("Relative area of the cells by sides for the tessellations in stationary state")+
+    stat_summary(aes(y = area,group=1), fun=mean, colour="#00BFC4", geom="line",group=1)
+  show(plotareaedges)
+  
+  mined<-min(edgear$edges)
+  maxed<-max(edgear$edges)
+  quant<-maxed-mined
+  
+  datahist<-data.frame(edges=numeric(),frec=numeric())
+  
+  for (i in min(edgear$Frame):max(edgear$Frame)){
+    for (j in mined:maxed) {
+      dat<-filter(edgear, edges == j & Frame == i)
+      pos<-(i-1)*quant+j-mined+1
+      datahist[pos,c(1,2)]<-c(j, length(dat$edges))
+    }
+  }
+  meandat<-data.frame(edges=numeric(), meanfrec=numeric())
+  
+  for (j in mined:maxed) {
+    dat2<-filter(datahist, edges==j)
+    pos<-j-mined+1
+    meandat[pos,c(1,2)]<-c(j,mean(dat2$frec))
+  }
+  print(datahist)
+  print(meandat)
+  
+  histedges<-ggplot(meandat,aes(edges,meanfrec))+
+    geom_col(colour="#F8766D", fill="#7CAE00", alpha=0.6)+
+    xlab("Number of edges")+ylab("Average frequency")+
+    ggtitle("Average quantity of sides of the cells for the tessellations in stationary state")+
+    xlim(3,9)
+  show(histedges)
+}
+
+regnls<-function(energh){
+  x<-unlist(lapply(energh$iteration,as.numeric))
+  y<-unlist(lapply(energh$energy,as.numeric))
+  m<-nls(y~I(a+b*(1-exp(-x/c))),start = list(a=2,b=0.3,c=0.1))
+  plot(x,y)
+  lines(x,predict(m),col="red",lwd=3)
+  summary(m)
+}
+regnls2<-function(energh){
+  x<-unlist(lapply(energh$iteration,as.numeric))
+  y<-unlist(lapply(energh$energy,as.numeric))
+  m<-nls_multstart(y~I(a+b*(1-exp(-x/c))),
+                   iter = 500,
+                   start_lower = list(a=0,b=-5,c=0.01),
+                   start_upper = list(a=5,b=5,c=1000))
+  plot(x,y)
+  lines(x,predict(m),col="red",lwd=3)
+  summary(m)
+  return(m)
+}
+
 plotenergy<-function(en){
   ploten<-ggplot(en,aes(x=iteration,y=energy))+
     geom_line(colour="#F8766D")+
     xlab("Iteration of the algorithm")+
-    ylab("Tesselation energy")+
-    scale_x_continuous(trans = "log")+
+    ylab("Average energy of the cells")+
     ggtitle("Energy relaxation of the tesselation")
   show(ploten)
 }
@@ -173,7 +271,7 @@ n<-n_adim
 
 r<- wid/n #radio en que cambiamos el punto
 bet<-10
-pasos<-300
+pasos<-250
 
 
 
