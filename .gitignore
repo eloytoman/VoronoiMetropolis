@@ -5,3 +5,5 @@
 .png
 *.png
 frames
+*.Rds
+*.csv
