@@ -277,14 +277,5 @@ energyinit
 energytesel
 
 
-#plotvor3(points$x,points$y)
-
-#plotvor3(pointsinit$x,pointsinit$y)
-
-#ggplotvor(pointsinit, "       Initial Voronoi Tesselation")
-
-#ggplotvor(points,"       Final Voronoi Tesselation")
-
-#areasideplots(points)
 energhist$energy<-energhist$energy/n #we plot mean cell energy
 plotenergy(energhist)
