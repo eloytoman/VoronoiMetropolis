@@ -40,16 +40,31 @@ plotvor3<-function(xv,yv){
   lines(c(xmax+wid,xmax+wid),c(ymin,ymax))
 }
 
-ggplotvor<-function(xg,yg){
-  dist <- sqrt((xg - (wid/2))^2 + (yg - (ymax-ymin)/2)^2)
-  df <- data.frame(xg, yg, dist = dist)
-  ggplot(df, aes(xg, yg)) +
-    stat_voronoi(geom = "path",
-                 color = 4,      # Color de las líneas
-                 lwd = 0.7,      # Grosor de las líneas
-                 linetype = 1) + # Tipo de líneas
-    geom_point()
-  
+ggplotvor<-function(plotpoints,tit){
+  rectangle <- data.frame(x=c(xmin,xmin,xmax+2*wid,xmax+2*wid),y=c(ymin,ymax,ymax,ymin))
+  pl <- ggplot(plotpoints,aes(x,y)) +
+    geom_voronoi(aes(fill=as.factor(y)),size=.125, outline = rectangle,show.legend = FALSE) +
+    geom_vline(xintercept = xmax,color = 'white',linetype='solid',size=1) +
+    geom_vline(xintercept = xmax+wid,color = 'white',linetype='solid',size=1) +
+    stat_voronoi(geom="path",outline = rectangle) +
+    geom_point(size=2) +
+    theme(
+      panel.grid.major = element_blank() # Remove gridlines (major)
+      ,panel.grid.minor = element_blank() # Remove gridlines (minor)
+      ,panel.background = element_blank() # Remove grey background
+      ,plot.title = element_text(hjust = 0, size = 20, colour = "#323232") # Title size and colour
+      ,plot.caption = element_text(vjust = 0.3, size = 11, colour = "#323232") # Caption size and colour
+      ,axis.ticks.y = element_blank() # Remove tick marks (Y-Axis)
+      ,axis.text.y =  element_blank() # Remove scale marks (Y-Axis)
+      ,axis.title.y = element_blank() # Remove axis label (Y-Axis) 
+      ,axis.ticks.x = element_blank() # Remove tick marks (X-Axis)
+      ,axis.text.x  = element_blank() # Remove axis scale (X-Axis)
+      ,axis.title.x = element_blank() # Remove axis label (X-Axis) 
+      ,legend.position="bottom"
+    ) +
+    labs(title = tit # Title text
+         ,caption = "Author: Eloy Serrano        ")
+  show(pl)
 }
 
 areasideplots<-function(xy){
@@ -141,10 +156,6 @@ ptsinitx<-x
 ptsinity<-y
 pointsinit<-data.frame(x=ptsinitx,y=ptsinity)
 
-#histpts<-rep(list(list()), pasos)
-#histpts<-vector(mode="logical",length=pasos)
-#histpts[[1]]<-c(x,y)
-#para guardar los puntos que se van generando
 
 rec<-c(xmin,xmin+3*wid,ymin,ymax)
 
@@ -177,9 +188,9 @@ energyinit
 energytesel
 #histpts<-Filter(Negate(is.null), histpts)
 
-plotvor3(pointsinit$x,pointsinit$y)
+ggplotvor(pointsinit,"       Initial Voronoi Tesselation (Lloyd)")
 
-plotvor3(points$x,points$y)
+ggplotvor(points,"       Final Voronoi Tesselation (Lloyd)")
 
 areasideplots(points)
 plotenergy(energhist)

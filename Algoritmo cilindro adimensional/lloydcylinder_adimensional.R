@@ -1,44 +1,20 @@
 library(deldir)
-library(ggplot2)
 library(ggvoronoi)
-library(gganimate)
-library(dplyr)
+library(ggplot2)
 library(plotly)
+library(av)
 
-changepoint3<-function(pt){
-  ind<-sample(1:n,1)
-  ptinx<-pt$x[ind]+rnorm(1,mean=0,sd=r)
-  ptiny<-pt$y[ind]+rnorm(1,mean=0,sd=r)
-  while((ptinx<xmin || ptinx>xmax)||(ptiny<ymin || ptiny>ymax)){
-    ptinx<-pt$x[ind]+rnorm(1,mean=0,sd=r)
-    ptiny<-pt$y[ind]+rnorm(1,mean=0,sd=r)
-  }
-  pt$x[c(ind,ind+n,ind+2*n)]<-c(ptinx,ptinx+wid,ptinx+2*wid)
-  pt$y[c(ind,ind+n,ind+2*n)]<-ptiny
-  return(pt)
-}
 
-energytes<-function(tile){
-  perim<-tilePerim(tile)$perimeters
-  energycell<-c()
+
+energytes_adim<-function(tile){
+  perim_ad<-(tilePerim(tile)$perimeters)/sqrt(A0)
+  energytesel<-c(0)
   for (i in 1:length(tile)){
-    energycell[i]<-((k/2)*(((tile[[i]]$area)-A0)^2)) #+(gam/2)*(perim[[i]])^2+lambda*perim[[i]]
+    energytesel<-energytesel+(((tile[[i]]$area)/A0)-1)^2+
+      (gam_ad/2)*(perim_ad[[i]])^2+
+      lambda_ad*perim_ad[[i]]
   }
-  energytesel<-sum(energycell)
   return(energytesel)
-}
-
-teselandenergy3<-function(xt,yt){
-  tesel<-deldir(xt,yt,rw=rec)
-  tilest<-tile.list(tesel)[(n+1):(2*n)]
-  tesener<-energytes(tilest)
-  return(tesener)
-}
-
-choice<-function(delta){
-  if(delta<=0){p<-1}else if(exp(-delta*bet)==Inf){p<-0}else{p<-exp(-delta*bet)}
-  a=sample(c(0,1), size = 1,replace=TRUE, prob = c(1-p,p))
-  return(a)
 }
 
 plotvor3<-function(xv,yv){
@@ -157,22 +133,26 @@ trhistpts<-function(histpt){
   return(df1)
 }
 
+lloydpoints<-function(x){
+  if(x-wid>xmax){x<-x-wid}else if(x-wid<xmin){x<-x+wid}else{x}
+}
+
 #comienza el programa
 
+
 k<-1
-gam<-1
-lambda<-1
+gam_ad<-0.15
+lambda_ad<-0.4
 xmin<-0
 ymin<-0
-xmax<-10
-ymax<-10
+xmax<-5
+ymax<-20
 wid<-xmax-xmin
-n<-35
 
-r<- wid/n #radio en que cambiamos el punto
-bet<-10
+n_adim<-100
+n<-n_adim
+
 pasos<-50
-
 
 A0<-(wid*(ymax-ymin))/n
 
@@ -184,47 +164,40 @@ x<-c(x1,x1+wid,x1+2*wid)
 y<-c(y1,y1,y1)
 points<-data.frame(x=x,y=y)
 
-pointsinit<-points
-
-#histpts<-rep(list(list()), pasos)
-#histpts<-vector(mode="logical",length=pasos)
-#histpts[[1]]<-c(x,y)
-#para guardar los puntos que se van generando
+ptsinitx<-x
+ptsinity<-y
+pointsinit<-data.frame(x=ptsinitx,y=ptsinity)
 
 rec<-c(xmin,xmin+3*wid,ymin,ymax)
 
 teselacion <- deldir(points$x,points$y,rw=rec)
 tiles <- tile.list(teselacion)
 tilescyl<-tiles[(n+1):(2*n)]
-energytesel<-energytes(tilescyl)
+energytesel<-energytes_adim(tilescyl)
 energyinit<-energytesel
 energhist<-data.frame(iteration=0,energy=energyinit)
 
-histpts<-list()
-
-#añadir un plot aqui
-
 for (j in 1:pasos) {
-  for(l in 1:n) {
-    points2<-changepoint3(points)
-    energytesel2<-teselandenergy3(points2$x,points2$y)
-    c<-choice(energytesel2-energytesel)
-    if(c==1){
-      points<-points2
-      energytesel<-energytesel2
-      histpts[[j*l]]<-list(points,energytesel)
-    }
-  }
+  teselacion <- deldir(points$x,points$y,rw=rec)
+  tiles <- tile.list(teselacion)
+  tilescyl<-tiles[(n+1):(2*n)]
+  energytesel<-energytes_adim(tilescyl)
   energhist[j+1,c(1,2)]<-c(j,energytesel)
+  
+  centroids<-tile.centroids(tiles)[(n+1):(2*n),c(1,2)]
+  centroids$x<-unlist(sapply(centroids$x,lloydpoints))
+  centroids1<-centroids
+  centroids1$x<-centroids1$x-wid
+  centroids2<-centroids
+  centroids2$x<-centroids$x+wid
+  points[1:n,c(1,2)]<-centroids1
+  points[(n+1):(2*n),c(1,2)]<-centroids
+  points[(2*n+1):(3*n),c(1,2)]<-centroids2
 }
+
 energyinit
 energytesel
-histpts<-Filter(Negate(is.null), histpts)
-
-
-#plotvor3(points$x,points$y)
-
-#plotvor3(pointsinit$x,pointsinit$y)
+#histpts<-Filter(Negate(is.null), histpts)
 
 ggplotvor(pointsinit, "       Initial Voronoi Tesselation")
 
@@ -232,8 +205,6 @@ ggplotvor(points,"       Final Voronoi Tesselation")
 
 areasideplots(points)
 plotenergy(energhist)
-
-
 
 
 
