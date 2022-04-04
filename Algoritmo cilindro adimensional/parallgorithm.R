@@ -218,18 +218,33 @@ library(doParallel)
       energhist[j+1,c(1,2)]<-c(j,energytesel)
       energytesel
     }
+    #plotvor3(points$x,points$y)
+    
+    #plotvor3(pointsinit$x,pointsinit$y)
+    
+    #ggplotvor(pointsinit, "       Initial Voronoi Tesselation")
+    
+    #ggplotvor(points,"       Final Voronoi Tesselation")
+    
+    #areasideplots(points,Am)
+    #we plot mean cell energy
     return(list(histpts,energhist))
   }
   
+  #metropolisad(seed = 123, pasos = 5, n_adim = 100,
+  #             xmin = 0, xmax = 5, ymin = 0, ymax = 20, 
+  #             gam_ad = 0.15, lambda_ad = 0.04, bet=10)
   
-  cl <- makeCluster(4)
-  registerDoParallel(cl)
   
   
-  results<-foreach(i=100:104, .combine = rbind, .packages = "deldir") %dopar% {
+  #cl <- makeCluster(4)
+  #registerDoParallel(cl)
+  
+  
+  results<-foreach(i=100:104, .combine = rbind, .packages = "deldir") %do% {
     metropolisad(seed = i, pasos = 5, n_adim = 100,
                  xmin = 0, xmax = 5, ymin = 0, ymax = 20,
-                 gam_ad = 0.15, lambda_ad = 0.04, bet = 100)
+                 gam_ad = 0.15, lambda_ad = 0.04, bet = 10)
   }
   
-  stopImplicitCluster()
+  #stopImplicitCluster()
