@@ -25,7 +25,7 @@ library(doParallel)
   energytes_adim<-function(tile,A0,gamad,lamad){
     perim_ad<-(tilePerim(tile)$perimeters)/sqrt(A0)
     areas_ad<-sapply(tile,function(x){x$area})/A0
-    energytesel<-sum((areas_ad-1)^2+(gamad/2)*perim_ad+lamad*perim_ad)
+    energytesel<-sum((areas_ad-1)^2+(gamad/2)*(perim_ad^2) +lamad*perim_ad)
     return(energytesel)
   }
   
@@ -34,7 +34,7 @@ library(doParallel)
     tilest<-tile.list(tesel)[(n+1):(2*n)]
     perim_ad<-(tilePerim(tilest)$perimeters)/sqrt(A0)
     areas_ad<-sapply(tilest,function(x){x$area})/A0
-    tesener<-sum((areas_ad-1)^2+(gamad/2)*perim_ad+lamad*perim_ad)
+    tesener<-sum((areas_ad-1)^2+(gamad/2)*(perim_ad^2)+lamad*perim_ad)
     return(tesener)
   }
   

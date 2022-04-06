@@ -24,7 +24,7 @@ changepoint3<-function(pt){
 energytes_adim<-function(tile){
   perim_ad<-(tilePerim(tile)$perimeters)/sqrt(A0)
   areas_ad<-sapply(tile,function(x){x$area})/A0
-  energytesel<-sum((areas_ad-1)^2+(gam_ad/2)*perim_ad+lambda_ad*perim_ad)
+  energytesel<-sum((areas_ad-1)^2+(gam_ad/2)*(perim_ad^2)+lambda_ad*perim_ad)
   return(energytesel)
 }
 
@@ -33,7 +33,7 @@ teselandenergy3_adim<-function(xt,yt){
   tilest<-tile.list(tesel)[(n+1):(2*n)]
   perim_ad<-(tilePerim(tilest)$perimeters)/sqrt(A0)
   areas_ad<-sapply(tilest,function(x){x$area})/A0
-  tesener<-sum((areas_ad-1)^2+(gam_ad/2)*perim_ad+lambda_ad*perim_ad)
+  tesener<-sum((areas_ad-1)^2+(gam_ad/2)*(perim_ad^2)+lambda_ad*perim_ad)
   return(tesener)
 }
 
