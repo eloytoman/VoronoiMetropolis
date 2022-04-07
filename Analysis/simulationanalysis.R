@@ -76,7 +76,7 @@ ord<-function(results){
   
   ptsord<-data.frame(x=numeric(300*1000),y=numeric(300*1000))
   for (i in 0:999) {
-    ptsord[(i*300+1):((i+1)*300),c(1,2)]<-results1000[[i+1]][results1000[[i+1]]$Frame==300,c(1,2)]
+    ptsord[(i*300+1):((i+1)*300),c(1,2)]<-results[[i+1]][results[[i+1]]$Frame==300,c(1,2)]
   }
   return(ptsord)
 }
@@ -115,7 +115,91 @@ adjsim<-function(results){
   return(c(a,b,c))
 }
 
+
+scutoids_analysis_oneiter<-function(pointsAx, pointsAy, pointsBx, pointsBy, rect1, rect2, n = 100){
+  tslA<-deldir(pointsAx,pointsAy,rw=rect1)
+  tilA<-tile.list(tslA)[(n+1):(2*n)]
+  tslB<-deldir(pointsBx,pointsBy,rw=rect2)
+  tilB<-tile.list(tslB)[(n+1):(2*n)]
+  
+  cellsdf<-data.frame(edgesA=integer(),edgesB=integer())
+  
+  for (i in 1:length(tilA)) {
+    cellsdf[i,c(1,2)]<-c(length(tilA[[i]]$x),length(tilB[[i]]$x))
+  }
+  countdf<- cellsdf %>%
+    group_by(edgesA,edgesB) %>%
+    summarize(count=n())
+  
+  scutoidsplot<-ggplot(countdf, aes(x = edgesA, y = edgesB, label=count))+
+    geom_count(shape = "square", aes(color= count))+
+    xlab("Edges on apical surface")+ylab("Edges on basal surface")+
+    ggtitle("Polygon class of apical and basal surfaces")+
+    guides(colour = "colorbar", size = "none")+
+    scale_size_area(max_size = 30)+
+    geom_label()+
+    scale_fill_gradient(low = "light blue", high = "deepskyblue")+
+    xlim(3.3,7.5)+
+    ylim(3.5,7.5)
+  show(scutoidsplot)
+  
+  return(countdf)
+}
+
+
+
+scutoids_prep <- function(pointsAx,pointsAy,pointsBx,pointsBy,rect1,rect2,n){
+  tslA <- deldir(pointsAx,pointsAy,rw=rect1)
+  tilA <- tile.list(tslA)[(n+1):(2*n)]
+  tslB <- deldir(pointsBx,pointsBy,rw=rect2)
+  tilB <- tile.list(tslB)[(n+1):(2*n)]
+  cellsdf <- data.frame(edgesA=integer(),edgesB=integer())
+  for (i in 1:length(tilA)) {
+    cellsdf[i,c(1,2)] <- c(length(tilA[[i]]$x),length(tilB[[i]]$x))
+  }
+  countdf <- cellsdf %>%
+    group_by(edgesA,edgesB) %>%
+    summarize(count=n())
+  return(countdf)
+}
+
+
+scutoids_analysis_stationary <- function(histpts, rect1, rect2, n = 100){
+  lon <- 50 #how many iterations we want to have
+  histdf_count <- data.frame(edgesA=integer(lon*n),edgesB=integer(lon*n),count=integer(lon*n))
+  for (i in 1:lon) {
+    histdf_count[((i-1)*n+1):(i*n)]<-
+      scutoids_prep(filter(histpts, Frame==250+i-1)$x,
+                    filter(histpts, Frame==250+i-1)$y,
+                    (Radius2/Radius)*filter(histpts, Frame==250+i-1)$x,
+                    filter(histpts, Frame==250+i-1)$y,
+                    rect1,rect2)
+  }
+  histdf_avgcount <- histdf_count %>%
+    group_by(edgesA,edgesB) %>%
+    summarize(avg_count=mean(count))
+  
+  
+  scutoidsplot<-ggplot(histdf_avgcount, aes(x = edgesA, y = edgesB, label=avg_count))+
+    geom_count(shape = "square", aes(color= avg_count))+
+    xlab("Average of edges on apical surface")+ylab("Average of edges on basal surface")+
+    ggtitle("Average polygon class of apical and basal surfaces")+
+    guides(colour = "colorbar", size = "none")+
+    scale_size_area(max_size = 30)+
+    geom_label()+
+    scale_fill_gradient(low = "light blue", high = "deepskyblue")+
+    xlim(3.3,7.5)+
+    ylim(3.5,7.5)
+  show(scutoidsplot)
+  return(histdf_avgcount)
+}
+
 resord<-ord(results1000)
 edgearsim<-funaux2sim(resord)
 stationarylewis(edgearsim[1:1000,c(1,2,3)])
 coef<-adjsim(results1000)
+
+scutoids_analysis_oneiter(points$x,points$y,(Radius2/Radius)*points$x,points$y,rec,rec2)
+
+
+
