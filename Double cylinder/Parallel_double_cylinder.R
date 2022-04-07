@@ -126,7 +126,7 @@ library(doParallel)
     recA <- c(xmin,xmin+3*cyl_width_A,ymin,ymax)
     recB <- c(xmin,xmin+3*cyl_width_B,ymin,ymax)
     
-    R_coef <- Radius2/Radius
+    R_coef <- RadiusB/RadiusA
     
     
     #Start, first iteration
