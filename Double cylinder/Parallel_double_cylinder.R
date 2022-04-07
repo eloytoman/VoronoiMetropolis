@@ -8,12 +8,11 @@ library(foreach)
 library(doParallel)
 
 
-  move_points<-function(pt,xmin,xmax,ymin,ymax,rc,n){
-    wid<-xmax-xmin
+  move_points<-function(pt,wid,len,rc,n){
     ind<-sample(1:n,1)
     ptinx<-pt$x[ind]+rnorm(1,mean=0,sd=rc)
     ptiny<-pt$y[ind]+rnorm(1,mean=0,sd=rc)
-    while((ptinx<xmin || ptinx>xmax)||(ptiny<ymin || ptiny>ymax)){
+    while((ptinx<0 || ptinx>wid)||(ptiny<0 || ptiny>len)){
       ptinx<-pt$x[ind]+rnorm(1,mean=0,sd=rc)
       ptiny<-pt$y[ind]+rnorm(1,mean=0,sd=rc)
     }
@@ -22,13 +21,20 @@ library(doParallel)
     return(pt)
   }
   
-  tesellation_energy_double<-function(xt,yt,A0,rect,gamad,lamad,n){
-    tesel<-deldir(xt,yt,rw=rect)
+  tesellation_energy_double<-function(xt, yt, A0, rec1, rec2,
+                                      R_c,gamad,lamad,n){
+    tesel<-deldir(xt,yt,rw=rec1)
     tilest<-tile.list(tesel)[(n+1):(2*n)]
-    perim_ad<-(tilePerim(tilest)$perimeters)/sqrt(A0)
-    areas_ad<-sapply(tilest,function(x){x$area})/A0
-    tesener<-sum((areas_ad-1)^2+(gamad/2)*perim_ad+lamad*perim_ad)
-    return(tesener)
+    perims<-(tilePerim(tilest)$perimeters)/sqrt(A0)
+    areas<-sapply(tilest,function(x){x$area})/A0
+    tesener<-sum((areas-1)^2+(gamad/2)*(perims^2)+lamad*perims)
+    
+    tesel2<-deldir(xt*(R_c),yt,rw=rec2)
+    tilest2<-tile.list(tesel2)[(n+1):(2*n)]
+    perims2<-(tilePerim(tilest2)$perimeters)/sqrt(A0)
+    areas2<-sapply(tilest2,function(x){x$area})/A0
+    tesener2<-sum((areas2-1)^2+(gamad/2)*(perims2^2)+lamad*perims2)
+    return(tesener+tesener2)
   }
   
   choice_metropolis<-function(delta,beta){
@@ -38,7 +44,7 @@ library(doParallel)
     return(a)
   }
 
-  ggplotvor<-function(plotpoints,tit){
+  ggplotvor<-function(plotpoints,tit,wid){
     rectangle <- data.frame(x=c(xmin,xmin,xmax+2*wid,xmax+2*wid),y=c(ymin,ymax,ymax,ymin))
     pl <- ggplot(plotpoints,aes(x,y)) +
       geom_voronoi(aes(fill=as.factor(y)),size=.125, outline = rectangle,show.legend = FALSE) +
@@ -66,31 +72,27 @@ library(doParallel)
   }
   
   areasideplots<-function(px,py,rect,tit1,tit2,A0){
-    tsl<-deldir(xy$x,xy$y,rw=rect)
-    til<-tile.list(tsl)
-    celledgearea<-data.frame()
+    tsl<-deldir(px,py,rw=rect)
+    til<-tile.list(tsl)[(n+1):(2*n)]
+    celledgearea<-data.frame(edges=numeric(),area=numeric())
     for (i in 1:length(til)) {
       celledgearea[i,c(1,2)]<-c(length(til[[i]]$x),til[[i]]$area/A0)
     }
-    #option2
-    #celledgearea<-data.frame(Lwlw$num.edges,Lwlw$tile.areas/A0)
-    colnames(celledgearea)<-c("edges","area")
-    plotareaedges<-ggplot(celledgearea, aes(x = edges, y = area, colour = area))+
+    plotareaedges <- ggplot(celledgearea, aes(x = edges, y = area, colour = area))+
       geom_point()+xlab("Number of sides")+ylab("Relative area")+
-      ggtitle("Relative area of the cells by sides")+
+      ggtitle(tit1)+
       stat_summary(aes(y = area,group=1), fun=mean, colour="#00BFC4", geom="line",group=1)
     show(plotareaedges)
     
-    histedges<-ggplot(celledgearea,aes(edges))+geom_histogram(colour="#F8766D" ,fill="#7CAE00",bins=10,alpha=0.6)+
+    histedges <- ggplot(celledgearea,aes(edges))+geom_histogram(colour="#F8766D" ,fill="#7CAE00",bins=10,alpha=0.6)+
       xlab("Number of edges")+ylab("Frequency")+
-      ggtitle("Quantity of sides of the cells")+
+      ggtitle(tit2)+
       xlim(2,11)
     show(histedges)
-    
   }
   
-  plotenergy<-function(en){
-    ploten<-ggplot(en,aes(x=iteration,y=energy))+
+  plotenergy <- function(en){
+    ploten <- ggplot(en,aes(x=iteration,y=energy))+
       geom_line(colour="#F8766D")+
       xlab("Iteration of the algorithm")+
       ylab("Tesselation energy")+
@@ -102,43 +104,65 @@ library(doParallel)
   #comienza el programa
   
   
-  metropolisad<-function(seed=666,pasos=250,n_adim=100,
-                         xmin=0,xmax=5,ymin=0,ymax=20,
-                         gam_ad,lambda_ad,bet){
-    wid<- xmax-xmin
-    n <- n_adim
-    r <- wid/n #radio en que cambiamos el punto
-    Am <- (wid*(ymax-ymin))/n
+  metropolisad<-function(seed = 666, steps = 250, n = 100,
+                         RadiusA = 5, RadiusB = 2.5*5, cyl_length = 20,
+                         gamma_ad = 0.15, lambda_ad = 0.04, beta = 100){
+    
+    
+    #We define our variables
+    
+    cyl_width_A <- 2*pi*RadiusA
+    cyl_width_B <- 2*pi*RadiusB
+    
+    #We define the vertices of the plane
+    xmin <- 0
+    xmax <- cyl_width_A
+    ymin <- 0
+    ymax <- cyl_length
+    
+    r <- cyl_width_A/n #radius to make the moves
+    Am <- (cyl_width_A*(cyl_length))/n
+    
+    recA <- c(xmin,xmin+3*cyl_width_A,ymin,ymax)
+    recB <- c(xmin,xmin+3*cyl_width_B,ymin,ymax)
+    
+    R_coef <- Radius2/Radius
+    
+    
+    #Start, first iteration
+    
     set.seed(seed)
+    
     x1 <- runif(n,xmin,xmax)
     y1 <- runif(n,ymin,ymax)
-    x <-c(x1,x1+wid,x1+2*wid)
+    x <-c(x1,x1+cyl_width_A,x1+2*cyl_width_A)
     y <-c(y1,y1,y1)
+    
     points <- data.frame(x=x,y=y)
     pointsinit <- points
-    
-    rec <- c(xmin,xmin+3*wid,ymin,ymax)
-    
-    
-    energytesel <- tesellation_energy_double(tilescyl,Am,gam_ad,lambda_ad)
+    energytesel <- tesellation_energy_double(points$x, points$y, Am, recA, recB,
+                                             R_coef, gamma_ad, lambda_ad, n)
     energyinit <- energytesel
-    energhist <- data.frame(matrix(ncol=2,nrow=pasos))
-    names(energhist) <- c("iteration","energy")
+    
+    #We create the variables to store the results
+    energhist <- data.frame(iteration=numeric(steps), energy=numeric(steps))
     energhist[1,c(1,2)] <- c(0,energyinit)
-    histpts <- data.frame(matrix(ncol=3,nrow=3*n*pasos))
-    names(histpts) <- c("x","y","Frame")
+    histpts <- data.frame(x=numeric(3*n*steps),
+                          y=numeric(3*n*steps),
+                          Frame = integer(3*n*steps))
     histpts[1:(3*n),c(1,2)] <- points
     histpts[1:(3*n),3] <- 1
-    points2<-data.frame(x=x,y=y)
+    points2 <- data.frame(x=x,y=y)
     energytesel
     
-    
-    for (j in 1:pasos) {
+    #Start of the loop
+    for (j in 1:steps) {
       for(l in 1:n) {
-        points2<-move_points(points,xmin,xmax,ymin,ymax,r,n_adim)
-        energytesel2<-tesellation_energy_double(points2$x,points2$y,Am,rec,
-                                           gam_ad,lambda_ad,n)
-        c<-choice_metropolis(energytesel2-energytesel,bet)
+        points2<-move_points(points,cyl_width_A,cyl_length,r,n)
+        energytesel2<-tesellation_energy_double(points2$x, points2$y, Am,
+                                                recA, recB, R_coef, 
+                                                gamma_ad, lambda_ad, n)
+        c<-choice_metropolis(energytesel2-energytesel,beta)
         cond<-c==1
         if(cond){
           points<-points2
@@ -160,9 +184,7 @@ library(doParallel)
   
   
   results<-foreach(i=100:104, .combine = rbind, .packages = "deldir") %dopar% {
-    metropolisad(seed = i, pasos = 5, n_adim = 100,
-                 xmin = 0, xmax = 5, ymin = 0, ymax = 20,
-                 gam_ad = 0.15, lambda_ad = 0.04, bet = 100)
+    metropolisad(steps = 2)
   }
   
   stopImplicitCluster()
