@@ -97,21 +97,29 @@ regnls2<-function(energh){
                    iter = 500,
                    start_lower = list(a=0,b=-5,c=0.01),
                    start_upper = list(a=5,b=5,c=1000))
-  #plot(x,y)
-  #lines(x,predict(m),col="red",lwd=3)
-  #summary(m)
+  plot(x,y)
+  lines(x,predict(m),col="red",lwd=3)
+  summary(m)
   return(summary(m)[["coefficients"]][c(1,2,3)])
 }
 
 adjsim<-function(results){
-  #With this function we extract the points for the 400th iteration of every simulation
+  #With this function we extract the points for the 300th iteration of every simulation
   coefest<-data.frame(a=double(1000),b=double(1000),c=double(1000))
   for (i in 1:1000) {
-    coefest[i,c(1,2,3)]<-regnls2(results1000[[i+1000]])
+    coefest[i,c(1,2,3)]<-regnls2(results[[i+1001]])
   }
   a<-mean(coefest$a)
   b<-mean(coefest$b)
   c<-mean(coefest$c)
+  adj<-function(x) a+b*(1-exp(-x/c))
+  adj_data<-data.frame(x=1:300,y=adj(1:300))
+  ploten<-ggplot(data = adj_data, aes(x=x,y=y))+
+    geom_line(colour="#F8766D")+
+    xlab("Iteration of the algorithm")+
+    ylab("Average energy of the cells")+
+    ggtitle("Average energy relaxation of the tesselation. 1000 simulations")
+  show(ploten)
   return(c(a,b,c))
 }
 
