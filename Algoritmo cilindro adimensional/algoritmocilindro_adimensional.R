@@ -24,7 +24,7 @@ changepoint3<-function(pt){
 energytes_adim<-function(tile){
   perim_ad<-(tilePerim(tile)$perimeters)/sqrt(A0)
   areas_ad<-sapply(tile,function(x){x$area})/A0
-  energytesel<-sum((areas_ad-1)^2+(gam_ad/2)*perim_ad+lambda_ad*perim_ad)
+  energytesel<-sum((areas_ad-1)^2+(gam_ad/2)*(perim_ad^2)+lambda_ad*perim_ad)
   return(energytesel)
 }
 
@@ -33,7 +33,7 @@ teselandenergy3_adim<-function(xt,yt){
   tilest<-tile.list(tesel)[(n+1):(2*n)]
   perim_ad<-(tilePerim(tilest)$perimeters)/sqrt(A0)
   areas_ad<-sapply(tilest,function(x){x$area})/A0
-  tesener<-sum((areas_ad-1)^2+(gam_ad/2)*perim_ad+lambda_ad*perim_ad)
+  tesener<-sum((areas_ad-1)^2+(gam_ad/2)*(perim_ad^2)+lambda_ad*perim_ad)
   return(tesener)
 }
 
@@ -99,14 +99,10 @@ byareaenergy<-function(points){
 areasideplots<-function(xy){
   tsl<-deldir(xy$x,xy$y,rw=rec)
   til<-tile.list(tsl)[(n+1):(2*n)]
-  #Lwlw<-lawSummary(tsl)
-  #option1
   celledgearea<-data.frame()
   for (i in 1:length(til)) {
     celledgearea[i,c(1,2)]<-c(length(til[[i]]$x),til[[i]]$area/A0)
   }
-  #option2
-  #celledgearea<-data.frame(Lwlw$num.edges,Lwlw$tile.areas/A0)
   colnames(celledgearea)<-c("edges","area")
   plotareaedges<-ggplot(celledgearea, aes(x = edges, y = area, colour = area))+
     geom_point()+xlab("Number of sides")+ylab("Relative area")+
@@ -213,49 +209,6 @@ plotenergy<-function(en){
   show(ploten)
 }
 
-plotcompener<-function(en1,en2,name1,name2){
-  #After introducing the energy vector of lloyd and metropolis algorithm,
-  #this function makes the combined plot of both energies.
-  m=length(en1$iteration)
-  energy<-en1
-  energy[(m+1):(2*m),c(1,2)]<-en2
-  energy[1:m,3]<-name1
-  energy[(m+1):(2*m),3]<-name2
-  colnames(energy)<-c("iteration","energy","algorithm")
-  
-  p<-ggplot(energy,aes(x=iteration, y=energy, color=algorithm))+
-    geom_line()+
-    xlab("Iteration of the algorithm")+
-    scale_y_continuous(name="Tesselation energy", trans="log")+
-    ggtitle("Energy relaxation of the tesselation by algorithms")
-  show(p)
-}
-
-plotminener<-function(histpt){
-  #Lets draw the tesselation corresponding with minimum energy
-  energhist<-list()
-  for (i in 1:length(histpt)) {
-    energhist[[i]]<-histpt[[i]][[2]]
-  }
-  indmin<-which.min(unlist(energhist))
-  ptsmin<-histpt[[indmin]][[1]]
-  plotvor3(ptsmin$x,ptsmin$y)
-}
-
-trhistpts<-function(histpt){
-  #prepara los puntos para hacer el video
-  t<-length(histpt)
-  df1<-histpt[[1]][[1]]
-  df1[,3]<-1
-  names(df1)<-c("x","y","Frame")
-  for (i in 2:t) {
-    a<-length(df1$x)
-    df1[a+1:(3*n),c(1,2)]<-histpt[[i]][[1]]
-    df1[a+1:(3*n),3] <- i
-  }
-  return(df1)
-}
-
 #comienza el programa
 
 gam_ad<-0.15
@@ -324,14 +277,5 @@ energyinit
 energytesel
 
 
-#plotvor3(points$x,points$y)
-
-#plotvor3(pointsinit$x,pointsinit$y)
-
-#ggplotvor(pointsinit, "       Initial Voronoi Tesselation")
-
-#ggplotvor(points,"       Final Voronoi Tesselation")
-
-#areasideplots(points)
 energhist$energy<-energhist$energy/n #we plot mean cell energy
 plotenergy(energhist)
