@@ -184,7 +184,7 @@ library(doParallel)
   
   
   results<-foreach(i=100:104, .combine = rbind, .packages = "deldir") %dopar% {
-    metropolisad(steps = 2)
+    metropolisad(seed = i, steps = 2)
   }
   
   stopImplicitCluster()
