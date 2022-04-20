@@ -20,14 +20,14 @@ move_points<-function(pt){
 
 tesellation_energy_N<-function(xt,yt){
   tesener<-numeric(L)
-  for (i in 1:L) {
+  
+  tesener<-sapply(1:L,function(i) {
     tesel<-deldir(xt*(rad[[i]]/Radius),yt,rw=rec[[i]])
     tilest<-tile.list(tesel)[(n+1):(2*n)]
     perims<-(tilePerim(tilest)$perimeters)/sqrt(A0)
     areas<-sapply(tilest,function(x){x$area})/A0
-    tesener[[i]]<-sum((areas-1)^2+(gamma_ad/2)*(perims^2)+lambda_ad*perims)
-  }
-  
+    sum((areas-1)^2+(gamma_ad/2)*(perims^2)+lambda_ad*perims)
+  })
   return(sum(tesener))
 }
 
@@ -125,7 +125,7 @@ L <- 10  #Layers
 
 r <- cyl_width/n 
 bet <- 10
-steps <- 10
+steps <- 50
 
 
 A0 <- (cyl_width*(ymax-ymin))/n
@@ -139,9 +139,6 @@ y <- c(y1,y1,y1)
 points <- data.frame(x=x,y=y)
 
 pointsinit <- points
-
-rec1 <- c(xmin,xmin+3*cyl_width,ymin,ymax)
-rec2 <- c(xmin,xmin+3*cyl_width2,ymin,ymax)
 
 rec <- list()
 rad <- list()
@@ -178,7 +175,7 @@ for (j in 1:steps) {
   histpts[(j*3*n+1):(j*3*n+3*n),3] <- j+1
   energhist[j+1,c(1,2)] <- c(j,energytesel)
 }
-save(list = c(histpts,energhist), file = "data300it.Rds")
+save(histpts,energhist, file = "data300it.Rds")
 energyinit
 energytesel
 
