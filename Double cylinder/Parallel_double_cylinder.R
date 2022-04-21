@@ -105,7 +105,7 @@ library(doParallel)
   
   
   metropolisad<-function(seed = 666, steps = 250, n = 100,
-                         RadiusA = 5, RadiusB = 2.5*5, cyl_length = 20,
+                         RadiusA = 5/(2*pi), RadiusB = 2.5*5/(2*pi), cyl_length = 20,
                          gamma_ad = 0.15, lambda_ad = 0.04, beta = 100){
     
     
