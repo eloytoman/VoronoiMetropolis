@@ -189,6 +189,10 @@ library(doParallel)
     metropolisad(seed = i, steps = 2)
   }
   
-  save(results, file = "results.Rds")
+  stopCluster(cl)
   
   stopImplicitCluster()
+  
+  save(results, file = "results.Rds")
+  
+ 
