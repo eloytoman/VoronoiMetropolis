@@ -80,7 +80,7 @@ stationarylewis<-function(edgear){
   
   for (i in min(edgear$Frame):max(edgear$Frame)){
     for (j in mined:maxed) {
-      dat<-filter(edgear, edges == j & Frame == i)
+      dat<-dplyr::filter(edgear, edges == j & Frame == i)
       pos<-(i-1)*quant+j-mined+1
       datahist[pos,c(1,2)]<-c(j, length(dat$edges))
     }
@@ -88,7 +88,7 @@ stationarylewis<-function(edgear){
   meandat<-data.frame(edges=numeric(), meanfrec=numeric())
   
   for (j in mined:maxed) {
-    dat2<-filter(datahist, edges==j)
+    dat2<-dplyr::filter(datahist, edges==j)
     pos<-j-mined+1
     meandat[pos,c(1,2)]<-c(j,mean(dat2$frec))
   }
@@ -226,10 +226,10 @@ scutoids_analysis_stationary <- function(histpts, rect1, rect2, n = 100){
   histdf_count <- data.frame(edgesA=integer(lon*n),edgesB=integer(lon*n),count=integer(lon*n))
   for (i in 1:lon) {
     histdf_count[((i-1)*n+1):(i*n)]<-
-      scutoids_prep(filter(histpts, Frame==250+i-1)$x,
-                    filter(histpts, Frame==250+i-1)$y,
-                    (Radius2/Radius)*filter(histpts, Frame==250+i-1)$x,
-                    filter(histpts, Frame==250+i-1)$y,
+      scutoids_prep(dplyr::filter(histpts, Frame==250+i-1)$x,
+                    dplyr::filter(histpts, Frame==250+i-1)$y,
+                    (Radius2/Radius)*dplyr::filter(histpts, Frame==250+i-1)$x,
+                    dplyr::filter(histpts, Frame==250+i-1)$y,
                     rect1,rect2)
   }
   histdf_avgcount <- histdf_count %>%
@@ -268,18 +268,14 @@ scutoids_analysis_simulations <- function(results, Ratio = 2.5, rect1 = rec, rec
     #each simulation have a different distribution of sides, so we have to adapt
     
     a <- length(histdf_count[[1]])
-    ptsx <- filter(results[[i]], Frame==it)$x
-    ptsy <- filter(results[[i]], Frame==it)$y
+    ptsx <- dplyr::filter(results[[i]], Frame==it)$x
+    ptsy <- dplyr::filter(results[[i]], Frame==it)$y
     df<-scutoids_prep(ptsx, ptsy,
                       Ratio*ptsx, ptsy,
                       rect1,rect2)
     len<-length(df[[1]])
     histdf_count[(a+1):(a+len),c(1,2,3)]<-df
   }
-  
-  histdf_avgcount <- histdf_count %>%
-    group_by(edgesA, edgesB) %>%
-    summarize(avg_count = mean(count))
   
   #Now, to compute the average, we have to take into account the 1000 simulations
   
@@ -290,10 +286,10 @@ scutoids_analysis_simulations <- function(results, Ratio = 2.5, rect1 = rec, rec
     for (edB in min(histdf_count$edgesB):max(histdf_count$edgesB)) {
       a <- length(histdf_avcount$edgesA)
       histdf_avcount[a+1,c(1,2,3)] <-
-        c(edA, edB, sum(filter(histdf_count, edgesA == edA & edgesB == edB)$count)/1000)
+        c(edA, edB, (sum(dplyr::filter(histdf_count, edgesA == edA & edgesB == edB)$count)/1000))
     }
   }
-  histdf_avcount <- filter(histdf_avcount, count >= 0.1)
+  histdf_avcount <- dplyr::filter(histdf_avcount, avg_count >= 0.1)
   
   scutoidsplot<-ggplot(histdf_avgcount, aes(x = edgesA, y = edgesB, label=avg_count))+
     geom_count(shape = "square", aes(color= avg_count))+
@@ -303,8 +299,8 @@ scutoids_analysis_simulations <- function(results, Ratio = 2.5, rect1 = rec, rec
     scale_size_area(max_size = 30)+
     geom_label()+
     scale_fill_gradient(low = "light blue", high = "deepskyblue")+
-    xlim(2.3,8.5)+
-    ylim(2.5,8.5)
+    xlim(min(histdf_count$edgesA), max(histdf_count$edgesA))+
+    ylim(min(histdf_count$edgesB), max(histdf_count$edgesB))
   show(scutoidsplot)
   return(histdf_avgcount)
 }
