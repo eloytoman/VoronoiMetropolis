@@ -31,7 +31,7 @@ library(doParallel)
       areas<-sapply(tilest,function(x){x$area})/A0
       sum((areas-1)^2+(gamad/2)*(perims^2)+lamad*perims)
     })
-    return(sum(tesener))
+    return(sum(tesener)/L)
   }
   
   choice_metropolis<-function(delta,beta){
@@ -102,7 +102,7 @@ library(doParallel)
   
   
   metropolisad<-function(seed = 666, steps = 250, n = 100, L=5,
-                         RadiusA = 5, Ratio = 2.5, cyl_length = 20,
+                         RadiusA = 5/(2*pi), Ratio = 2.5, cyl_length = 20,
                          gamma_ad = 0.15, lambda_ad = 0.04, beta = 100){
     
     
