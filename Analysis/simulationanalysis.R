@@ -299,8 +299,8 @@ scutoids_analysis_simulations <- function(results, Ratio = 2.5, rect1 = rec, rec
     scale_size_area(max_size = 30)+
     geom_label()+
     scale_fill_gradient(low = "light blue", high = "deepskyblue")+
-    xlim(min(histdf_count$edgesA), max(histdf_count$edgesA))+
-    ylim(min(histdf_count$edgesB), max(histdf_count$edgesB))
+    xlim(min(histdf_avcount$edgesA), max(histdf_avcount$edgesA))+
+    ylim(min(histdf_avcount$edgesB), max(histdf_avcount$edgesB))
   show(scutoidsplot)
   return(histdf_avgcount)
 }
@@ -313,7 +313,7 @@ stationarylewis(edgearsim[[2]][1:1000,c(1,2,3)])
 coef<-adjsim(results)
 
 scutoids_analysis_oneiter(points$x,points$y,(Radius2/Radius)*points$x,points$y,rec,rec2)
-scutoids_analysis_simulations(results)
+df_scutoid <- scutoids_analysis_simulations(results)
 
 save_tessellation <- function(pts, rec = c(xmin,xmin+3*cyl_width,ymin,ymax),
                               n = 100, radius = 5/(2*Pi)){
