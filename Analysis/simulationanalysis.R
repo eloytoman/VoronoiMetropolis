@@ -291,7 +291,7 @@ scutoids_analysis_simulations <- function(results, Ratio = 2.5, rect1 = rec, rec
   }
   histdf_avcount <- dplyr::filter(histdf_avcount, avg_count >= 0.1)
   
-  scutoidsplot<-ggplot(histdf_avgcount, aes(x = edgesA, y = edgesB, label=avg_count))+
+  scutoidsplot<-ggplot(histdf_avcount, aes(x = edgesA, y = edgesB, label=avg_count))+
     geom_count(shape = "square", aes(color= avg_count))+
     xlab("Average of edges on apical surface")+ylab("Average of edges on basal surface")+
     ggtitle("Average polygon class of apical and basal surfaces")+
