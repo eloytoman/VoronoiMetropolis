@@ -21,20 +21,17 @@ library(doParallel)
     return(pt)
   }
   
-  tesellation_energy_double<-function(xt, yt, A0, rec1, rec2,
-                                      R_c,gamad,lamad,n){
-    tesel<-deldir(xt,yt,rw=rec1)
-    tilest<-tile.list(tesel)[(n+1):(2*n)]
-    perims<-(tilePerim(tilest)$perimeters)/sqrt(A0)
-    areas<-sapply(tilest,function(x){x$area})/A0
-    tesener<-sum((areas-1)^2+(gamad/2)*(perims^2)+lamad*perims)
+  tesellation_energy_N<-function(xt, yt, A0, rec, rad, gamad, lamad, n, L){
+    tesener<-numeric(L)
     
-    tesel2<-deldir(xt*(R_c),yt,rw=rec2)
-    tilest2<-tile.list(tesel2)[(n+1):(2*n)]
-    perims2<-(tilePerim(tilest2)$perimeters)/sqrt(A0)
-    areas2<-sapply(tilest2,function(x){x$area})/A0
-    tesener2<-sum((areas2-1)^2+(gamad/2)*(perims2^2)+lamad*perims2)
-    return(tesener+tesener2)
+    tesener<-sapply(1:L,function(i) {
+      tesel<-deldir(xt*(rad[[i]]/rad[[1]]),yt,rw=rec[[i]])
+      tilest<-tile.list(tesel)[(n+1):(2*n)]
+      perims<-(tilePerim(tilest)$perimeters)/sqrt(A0)
+      areas<-sapply(tilest,function(x){x$area})/A0
+      sum((areas-1)^2+(gamad/2)*(perims^2)+lamad*perims)
+    })
+    return(sum(tesener)/L)
   }
   
   choice_metropolis<-function(delta,beta){
@@ -104,15 +101,18 @@ library(doParallel)
   #comienza el programa
   
   
-  metropolisad<-function(seed = 666, steps = 250, n = 100,
-                         RadiusA = 5/(2*pi), RadiusB = 2.5*5/(2*pi), cyl_length = 20,
+  metropolisad<-function(seed = 666, steps = 250, n = 100, L=5,
+                         RadiusA = 5/(2*pi), Ratio = 2.5, cyl_length = 20,
                          gamma_ad = 0.15, lambda_ad = 0.04, beta = 100){
     
     
     #We define our variables
     
+    RadiusB <- Ratio*RadiusA
     cyl_width_A <- 2*pi*RadiusA
     cyl_width_B <- 2*pi*RadiusB
+    
+    cyl_thickness <- RadiusB-RadiusA
     
     #We define the vertices of the plane
     xmin <- 0
@@ -123,11 +123,13 @@ library(doParallel)
     r <- cyl_width_A/n #radius to make the moves
     Am <- (cyl_width_A*(cyl_length))/n
     
-    recA <- c(xmin,xmin+3*cyl_width_A,ymin,ymax)
-    recB <- c(xmin,xmin+3*cyl_width_B,ymin,ymax)
+    rec <- list()
+    rad <- list()
     
-    R_coef <- RadiusB/RadiusA
-    
+    for(k in 1:L){
+      rad[[k]]<- RadiusA+(k-1)*(cyl_thickness/(L-1)) #the radius of the layer k
+      rec[[k]]<-c(xmin,xmin+3*(2*pi*rad[[k]]),ymin,ymax)
+    }
     
     #Start, first iteration
     
@@ -140,8 +142,8 @@ library(doParallel)
     
     points <- data.frame(x=x,y=y)
     pointsinit <- points
-    energytesel <- tesellation_energy_double(points$x, points$y, Am, recA, recB,
-                                             R_coef, gamma_ad, lambda_ad, n)
+    energytesel <- tesellation_energy_N(points$x, points$y, Am, rec , rad,
+                                        gamma_ad, lambda_ad, n, L)
     energyinit <- energytesel
     
     #We create the variables to store the results
@@ -159,9 +161,9 @@ library(doParallel)
     for (j in 1:steps) {
       for(l in 1:n) {
         points2<-move_points(points,cyl_width_A,cyl_length,r,n)
-        energytesel2<-tesellation_energy_double(points2$x, points2$y, Am,
-                                                recA, recB, R_coef, 
-                                                gamma_ad, lambda_ad, n)
+        energytesel2<-tesellation_energy_N(points2$x, points2$y, Am,
+                                                rec, rad, 
+                                                gamma_ad, lambda_ad, n, L)
         c<-choice_metropolis(energytesel2-energytesel,beta)
         cond<-c==1
         if(cond){
@@ -187,4 +189,10 @@ library(doParallel)
     metropolisad(seed = i, steps = 2)
   }
   
+  stopCluster(cl)
+  
   stopImplicitCluster()
+  
+  save(results, file = "results.Rds")
+  
+ 
