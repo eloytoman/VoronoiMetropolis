@@ -299,10 +299,10 @@ scutoids_analysis_simulations <- function(results, Ratio = 2.5, rect1 = rec, rec
     scale_size_area(max_size = 30)+
     geom_label()+
     scale_fill_gradient(low = "light blue", high = "deepskyblue")+
-    xlim(min(histdf_avcount$edgesA), max(histdf_avcount$edgesA))+
-    ylim(min(histdf_avcount$edgesB), max(histdf_avcount$edgesB))
+    xlim(min(histdf_avcount$edgesA)-0.5, max(histdf_avcount$edgesA)-0.5)+
+    ylim(min(histdf_avcount$edgesB)-0.5, max(histdf_avcount$edgesB)-0.5)
   show(scutoidsplot)
-  return(histdf_avgcount)
+  return(histdf_avcount)
 }
 
 
