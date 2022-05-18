@@ -21,17 +21,16 @@ library(doParallel)
     return(pt)
   }
   
-  tesellation_energy_N<-function(xt, yt, A0, rec, rad, gamad, lamad, n, L){
-    tesener<-numeric(L)
+  tesellation_energy_N<-function(xt, yt, A0, rec, rad, gamad, lamad, n, Layer){
     
-    tesener<-sapply(1:L,function(i) {
-      tesel<-deldir(xt*(rad[[i]]/rad[[1]]),yt,rw=rec[[i]])
+    tesener<-sapply(1:Layer,function(i) {
+      tesel<-deldir(xt*(rad[[i]]/rad[[1]]), yt, rw = rec[[i]])
       tilest<-tile.list(tesel)[(n+1):(2*n)]
       perims<-(tilePerim(tilest)$perimeters)/sqrt(A0)
       areas<-sapply(tilest,function(x){x$area})/A0
       sum((areas-1)^2+(gamad/2)*(perims^2)+lamad*perims)
     })
-    return(sum(tesener)/L)
+    return(sum(tesener)/Layer)
   }
   
   choice_metropolis<-function(delta,beta){
@@ -123,8 +122,8 @@ library(doParallel)
     r <- cyl_width_A/n #radius to make the moves
     Am <- (cyl_width_A*(cyl_length))/n
     
-    rec <- list()
-    rad <- list()
+    rec <- vector(mode = "list", length = L)
+    rad <- numeric(L)
     
     for(k in 1:L){
       rad[[k]]<- RadiusA+(k-1)*(cyl_thickness/(L-1)) #the radius of the layer k

@@ -152,8 +152,6 @@ energyinit <- energytesel
 energhist <- data.frame(iteration = double(steps),energy = double(steps))
 energhist[1,c(1,2)] <- c(0,energyinit)
 histpts <- data.frame(x = double(3*n*steps), y = double(3*n*steps), Frame = double(3*n*steps))
-histpts <- data.frame(matrix(ncol = 3,nrow = 3*n*steps))
-names(histpts) <- c("x","y","Frame")
 histpts[1:(3*n),c(1,2)] <- points
 histpts[1:(3*n),3] <- 1
 points2 <- data.frame(x = x, y = y)
