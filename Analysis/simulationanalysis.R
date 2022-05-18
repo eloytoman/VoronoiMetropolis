@@ -315,8 +315,9 @@ coef<-adjsim(results)
 scutoids_analysis_oneiter(points$x,points$y,(Radius2/Radius)*points$x,points$y,rec,rec2)
 df_scutoid <- scutoids_analysis_simulations(results)
 
-save_tessellation <- function(pts, rec = c(xmin,xmin+3*cyl_width,ymin,ymax),
-                              n = 100, radius = 5/(2*Pi)){
+save_tessellation <- function(pts, rec = c(xmin,xmin+3*xmax,ymin,ymax),
+                              n = 100, radius = 5/(2*pi)){
+  b <- 1
   tes <- deldir(pts$x,pts$y,rw=rec)
   tiles <- tile.list(tes)[(n+1):(2*n)]
   df <- data.frame(cell_id = double(), radius = double(),
@@ -335,7 +336,9 @@ save_tessellation <- function(pts, rec = c(xmin,xmin+3*cyl_width,ymin,ymax),
     df[i,3] <- tiles[[i]][[2]][[1]]
     df[i,4] <- tiles[[i]][[2]][[2]]
     df[i,5] <- length(tiles[[i]][[3]])
-    df[i,6:(6+length(tiles[[i]][[3]]))] <- tiles[[i]][[3]]
-    df[i,17:(17+length(tiles[[i]][[4]]))] <- tiles[[i]][[4]]
+    df[i,6:(5+length(tiles[[i]][[3]]))] <- tiles[[i]][[3]]
+    df[i,17:(16+length(tiles[[i]][[4]]))] <- tiles[[i]][[4]]
   }
+  write.csv2(df, file = "output_data.csv")
+  return(df)
 }
