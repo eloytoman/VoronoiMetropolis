@@ -56,7 +56,7 @@ bending_tesellation_energy_N<-function(points){
       ang <- acos(((vec1%*%vec2)[1,1])/(abs((vec1%*%vec2)[1,1])))
       return(ang)
     })
-    return(sum(alpha*(angles-pi)))
+    return(sum(alpha*((angles-pi)^2)))
   })
   
   return((sum(tesener)+sum(bendener))/L)
@@ -188,7 +188,7 @@ for (i in 1:L) {
 
 for (i in 1:L) {
   histpts[[i]][1:300,c(1,2)] <- points[[i]]
-  histpts[[i]][1:300,3] <- j+1
+  histpts[[i]][1:300,3] <- i+1
 }
 
 

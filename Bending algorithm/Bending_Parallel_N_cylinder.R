@@ -66,10 +66,10 @@ library(doParallel)
         return(ang)
       })
       
-      return(sum(alpha*(angles-pi)))
+      return(sum(alpha*((angles-pi)^2)))
     })
     
-    return((sum(tesener)+bendener)/Lay)
+    return((sum(tesener)+sum(bendener))/Lay)
   }
   
   choice_metropolis<-function(delta,beta){
@@ -195,8 +195,11 @@ library(doParallel)
     energhist <- data.frame(iteration=numeric(steps), energy=numeric(steps))
     energhist[1,c(1,2)] <- c(0,energytesel)
     
-    histpts <- vector(mode="list", length = steps)
-    histpts[[1]] <- points
+    histpts <- vector(mode="list", length = Layers)
+    
+    for (i in 1:Layers) {
+      histpts[[i]] <- data.frame(x = double(3*n*steps), y = double(3*n*steps), Frame = double(3*n*steps))
+    }
     
     #Start of the loop
     
@@ -215,18 +218,23 @@ library(doParallel)
         }
         gc()
       }
-      gc()
-      histpts[[j+1]] <- points
+      for (i in 1:Layers) {
+        histpts[[i]][(j*3*n+1):(j*3*n+3*n),c(1,2)] <- points[[i]]
+        histpts[[i]][(j*3*n+1):(j*3*n+3*n),3] <- j+1
+      }
       energhist[j+1,c(1,2)] <- c(j,energytesel)
+      gc()
     }
+    save(histpts, file = paste0("results_", i, ".Rds"))
     return(list(histpts,energhist))
   }
   
   cl <- makeCluster(4)
   registerDoParallel(cl)
   
-  results <- foreach(i=100:104, .combine = rbind, .packages = "deldir") %dopar% {
-    metropolisad(seed = i, steps = 2, n = 20, Layers = 3)
+  results <- foreach(i=1000:1003,
+                     .combine = rbind, .packages = "deldir") %dopar% {
+    do.call(metropolisad, list(seed = i, steps = 2, L=5, Ratio = 10))
   }
   
   stopCluster(cl)
