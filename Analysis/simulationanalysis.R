@@ -44,32 +44,31 @@ funaux2simDOUBLE<-function(ptsord, n = 100, ps = 1000, Ratio = 2.5){
   #This function returns a big dataframe, made up of one dataframe for each simulation
   # the df for one single simulation represents the edges and area of each of the cells.
   
-  edgearA<-data.frame(edges=integer(),area=double(),Frame=integer())
+  edgearA <- data.frame(edges=integer(), area=double(), Frame=integer())
   for (i in 1:ps) {
-    a<-length(edgearA$edges)
-    edgearA[(a+1):(a+n),c(1,2)]<-funaux(ptsord[((i-1)*(3*n)+1):(i*3*n),c(1,2)], rec=c(0,15,0,20), n)
-    edgearA[(a+1):(a+n),3]<-i
+    a <- length(edgearA$edges)
+    edgearA[(a+1):(a+n),c(1,2)] <- funaux(ptsord[((i-1)*(3*n)+1):(i*3*n),c(1,2)], rec=c(0,15,0,20), n)
+    edgearA[(a+1):(a+n),3] <- i
   }
   
-  ptsordB<-ptsord
-  ptsordB$x<-ptsordB$x*Ratio
+  ptsordB <- ptsord
+  ptsordB$x <- ptsordB$x*Ratio
   
-  edgearB<-data.frame(edges=integer(),area=double(),Frame=integer())
+  edgearB <- data.frame(edges=integer(),area=double(),Frame=integer())
   for (i in 1:ps) {
-    a<-length(edgearB$edges)
-    edgearB[(a+1):(a+n),c(1,2)]<-funaux(ptsordB[((i-1)*(3*n)+1):(i*3*n),c(1,2)], rec=c(0,15*Ratio,0,20))
+    a <- length(edgearB$edges)
+    edgearB[(a+1):(a+n),c(1,2)] <- funaux(ptsordB[((i-1)*(3*n)+1):(i*3*n),c(1,2)], rec=c(0,15*Ratio,0,20))
     edgearB[(a+1):(a+n),3]<-i
   }
-  
   return(list(edgearA,edgearB))
 }
 
 stationarylewis<-function(edgear){
   #First execute ord function (for results) and funaux2 with the data, then this function makes the plots.
-  plotareaedges<-ggplot(edgear, aes(x = edges, y = area, colour = area))+
-    geom_point()+xlab("Number of sides")+ylab("Relative area")+
+  plotareaedges <- ggplot(edgear, aes(x = edges, y = area, colour = area))+
+    geom_point() + xlab("Number of sides") + ylab("Relative area")+
     ggtitle("Relative area of the cells by sides for the tessellations in stationary state")+
-    stat_summary(aes(y = area,group=1), fun=mean, colour="#00BFC4", geom="line",group=1)
+    stat_summary(aes(y = area, group = 1), fun = mean, colour = "#00BFC4", geom = "line", group = 1)
   show(plotareaedges)
   
   mined<-min(edgear$edges)
@@ -85,15 +84,20 @@ stationarylewis<-function(edgear){
       datahist[pos,c(1,2)]<-c(j, length(dat$edges))
     }
   }
-  meandat<-data.frame(edges=numeric(), meanfrec=numeric())
+  
+  meandat <- data.frame(edges=numeric(), meanfrec=numeric())
+  variancedat <- data.frame(edges=numeric(),variance=numeric())
   
   for (j in mined:maxed) {
     dat2<-dplyr::filter(datahist, edges==j)
     pos<-j-mined+1
     meandat[pos,c(1,2)]<-c(j,mean(dat2$frec))
+    variancedat[pos,c(1,2)]<-c(j,var(dat2$frec))
   }
+  
   print(datahist)
   print(meandat)
+  print(variancedat)
   
   histedges<-ggplot(meandat,aes(edges,meanfrec/sum(meanfrec)))+
     geom_col(colour="#F8766D", fill="#7CAE00", alpha=0.6)+
@@ -103,7 +107,7 @@ stationarylewis<-function(edgear){
   show(histedges)
 }
 
-ord<-function(results, iter = 200){
+ord <- function(results, iter = 200){
   #With this function we extract the points for one iteration of every simulation
   #iter is the specific iteration of the algorithm that we extract to make the analysis
   
@@ -308,7 +312,7 @@ scutoids_analysis_simulations <- function(results, Ratio = 2.5, rect1 = rec, rec
 
 resord<-ord(results)
 edgearsim<-funaux2simDOUBLE(resord)
-stationarylewis(edgearsim[[1]][1:1000,c(1,2,3)])
+stationarylewis(edgearsim[[1]][1:100000,c(1,2,3)])
 stationarylewis(edgearsim[[2]][1:1000,c(1,2,3)])
 coef<-adjsim(results)
 
