@@ -164,14 +164,14 @@ library(doParallel)
                                                 rec, rad, 
                                                 gamma_ad, lambda_ad, n, L)
         c<-choice_metropolis(energytesel2-energytesel,beta)
-        cond<-c==1
+        cond <- c==1
         if(cond){
           points<-points2
           energytesel<-energytesel2
         }
       }
       gc()
-      histpts[(j*3*n+1):(j*3*n+3*n),c(1,2)]<-points
+      histpts[(j*3*n+1):(j*3*n+3*n),c(1,2)] <- points
       histpts[(j*3*n+1):(j*3*n+3*n),3]<-j+1
       energhist[j+1,c(1,2)]<-c(j,energytesel)
       energytesel
@@ -184,8 +184,8 @@ library(doParallel)
   registerDoParallel(cl)
   
   
-  results<-foreach(i=100:104, .combine = rbind, .packages = "deldir") %dopar% {
-    metropolisad(seed = i, steps = 2)
+  results<-foreach(i=c(3,5,10,20), .combine = rbind, .packages = "deldir") %dopar% {
+    metropolisad(seed = 1000, steps = 1, L=i)
   }
   
   stopCluster(cl)
@@ -194,4 +194,3 @@ library(doParallel)
   
   save(results, file = "results.Rds")
   
- 
