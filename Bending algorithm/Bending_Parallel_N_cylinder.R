@@ -166,7 +166,7 @@ library(doParallel)
     ymax <- cyl_length
     
     r <- cyl_width_A/n #radius to make the moves
-    Am <- (cyl_width_A*(cyl_length))/n
+    Am <- (((RadiusA+RadiusB)/2)*(cyl_length))/n
     
     rec <- list()
     rad <- list()

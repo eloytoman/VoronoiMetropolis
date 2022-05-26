@@ -155,7 +155,7 @@ r <- cyl_width/n
 bet <- 10
 steps <- 20
 
-A0 <- (cyl_width*(ymax-ymin))/n
+A0 <- (((Radius2+Radius)/2)*2*pi*cyl_length)/n
 
 rec <- list()
 rad <- list()
