@@ -83,33 +83,6 @@ ggplot_vororonoi_analysis <-function(pointsapical, pointsbasal, ratio = 2.5){
     labs(title = "Proyection of the apical surface tessellation" # Title text
          ,caption = "Author: Eloy Serrano        ")
   show(pl3)
-  
-  
-  pl4 <- ggplot(pointsapicalproy, aes(x,y)) +
-    geom_voronoi(aes(), size=.125, outline = rectanglebasal, show.legend = FALSE) +
-    geom_vline(xintercept = xmax*ratio,color = 'white',linetype='solid',size=1) +
-    geom_vline(xintercept = (xmax+wid)*ratio,color = 'white',linetype='solid',size=1) +
-    stat_voronoi(geom="path",outline = rectanglebasal) +
-    geom_voronoi(pointsbasal, aes(), size=.125, outline = rectanglebasal, show.legend = FALSE)
-    geom_point(size=2) +
-    theme(
-      panel.grid.major = element_blank() # Remove gridlines (major)
-      ,panel.grid.minor = element_blank() # Remove gridlines (minor)
-      ,panel.background = element_blank() # Remove grey background
-      ,plot.title = element_text(hjust = 0, size = 20, colour = "#323232") # Title size and colour
-      ,plot.caption = element_text(vjust = 0.3, size = 11, colour = "#323232") # Caption size and colour
-      ,axis.ticks.y = element_blank() # Remove tick marks (Y-Axis)
-      ,axis.text.y =  element_blank() # Remove scale marks (Y-Axis)
-      ,axis.title.y = element_blank() # Remove axis label (Y-Axis) 
-      ,axis.ticks.x = element_blank() # Remove tick marks (X-Axis)
-      ,axis.text.x  = element_blank() # Remove axis scale (X-Axis)
-      ,axis.title.x = element_blank() # Remove axis label (X-Axis) 
-      ,legend.position="bottom"
-    ) +
-    labs(title = "Proyection of the apical surface and basal surface tessellations" # Title text
-         ,caption = "Author: Eloy Serrano        ")
-  show(pl4)
-
 }
 
 xmin <- 0
@@ -117,13 +90,25 @@ xmax <- 5
 ymin <- 0
 ymax <- 20
 ratio <- 2.5
-pointsap <- dplyr::filter(histpts[[1]], Frame == 100 );
-pointsbas <- dplyr::filter(histpts[[3]], Frame == 100 );
-pointsap <- pointsap[,-3]
-pointsbas <- pointsbas[,-3]
-pointsap[,3] <- 1:100
-pointsbas[,3]<- 1:100
-names(pointsap) <- c("x","y","pt")
-names(pointsbas) <- c("x","y","pt")
+wid <-5
+pointsapa0 <- dplyr::filter(histpts0[[1]], Frame == 100 );
+pointsbasa0 <- dplyr::filter(histpts0[[4]], Frame == 100 );
+pointsapa0 <- pointsapa0[,-3]
+pointsbasa0 <- pointsbasa0[,-3]
+pointsapa0[,3] <- 1:100
+pointsbasa0[,3]<- 1:100
+names(pointsapa0) <- c("x","y","pt")
+names(pointsbasa0) <- c("x","y","pt")
 
-ggplot_vororonoi_analysis(pointsapical = pointsap, pointsbasal = pointsbas)
+ggplot_vororonoi_analysis(pointsapical = pointsapa0, pointsbasal = pointsbasa0)
+
+pointsapa5 <- dplyr::filter(histpts5[[1]], Frame == 100 );
+pointsbasa5 <- dplyr::filter(histpts5[[4]], Frame == 100 );
+pointsapa5 <- pointsapa5[,-3]
+pointsbasa5 <- pointsbasa5[,-3]
+pointsapa5[,3] <- 1:100
+pointsbasa5[,3]<- 1:100
+names(pointsapa5) <- c("x","y","pt")
+names(pointsbasa5) <- c("x","y","pt")
+
+ggplot_vororonoi_analysis(pointsapical = pointsapa5, pointsbasal = pointsbasa5)
