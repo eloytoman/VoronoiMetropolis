@@ -184,8 +184,8 @@ library(doParallel)
   registerDoParallel(cl)
   
   
-  results<-foreach(i=c(3,5,10,20), .combine = rbind, .packages = "deldir") %dopar% {
-    metropolisad(seed = 1000, steps = 1, L=i)
+  results<-foreach(i=c(10,20), .combine = rbind, .packages = "deldir") %dopar% {
+    metropolisad(seed = 1000, steps = 3, L=i)
   }
   
   stopCluster(cl)
