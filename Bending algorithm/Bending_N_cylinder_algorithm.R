@@ -39,21 +39,23 @@ bending_tesellation_energy_N<-function(points){
   
   bendener<- sapply(2:(L-1), function(i){
     angles <- sapply(1:n, function(j){
-      ptcentral <- c(points[[i-1]]$y[j],
+      ptcentral <- c(points[[i]]$y[j],
                      rad[[i]]*cos((1/rad[[i]])*points[[i]]$x[j]),
-                     rad[[i]]*cos((1/rad[[i]])*points[[i]]$x[j]))
+                     rad[[i]]*sin((1/rad[[i]])*points[[i]]$x[j]))
       
       ptinf <- c(points[[i-1]]$y[j],
                  rad[[i-1]]*cos((1/rad[[i-1]])*points[[i-1]]$x[j]),
-                 rad[[i-1]]*cos((1/rad[[i-1]])*points[[i-1]]$x[j]))
+                 rad[[i-1]]*sin((1/rad[[i-1]])*points[[i-1]]$x[j]))
       
       ptsup <- c(points[[i+1]]$y[j],
                  rad[[i+1]]*cos((1/rad[[i+1]])*points[[i+1]]$x[j]),
-                 rad[[i+1]]*cos((1/rad[[i+1]])*points[[i+1]]$x[j]))
+                 rad[[i+1]]*sin((1/rad[[i+1]])*points[[i+1]]$x[j]))
       
       vec1 <- ptsup - ptcentral
       vec2 <- ptinf - ptcentral
-      ang <- acos(((vec1%*%vec2)[1,1])/(abs((vec1%*%vec2)[1,1])))
+      v<-pmin(pmax(((vec1%*%vec2)[1,1])/
+                     (norm(vec1,type = "2")*norm(vec2,type = "2")),-1.0),1.0)
+      ang <- acos(v)
       return(ang)
     })
     return(sum(alpha*((angles-pi)^2)))
