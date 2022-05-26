@@ -224,7 +224,6 @@ scutoids_prep <- function(pointsAx,pointsAy,pointsBx,pointsBy,rect1,rect2,
   return(countdf)
 }
 
-
 scutoids_analysis_stationary <- function(histpts, rect1, rect2, n = 100){
   lon <- 50 #how many iterations we want to have
   histdf_count <- data.frame(edgesA=integer(lon*n),edgesB=integer(lon*n),count=integer(lon*n))
@@ -254,7 +253,6 @@ scutoids_analysis_stationary <- function(histpts, rect1, rect2, n = 100){
   show(scutoidsplot)
   return(histdf_avgcount)
 }
-
 
 scutoids_analysis_simulations <- function(results, Ratio = 2.5, rect1 = rec, rect2 = rec2,
                                           n = 100, sim = 1000){
@@ -308,7 +306,6 @@ scutoids_analysis_simulations <- function(results, Ratio = 2.5, rect1 = rec, rec
   show(scutoidsplot)
   return(histdf_avcount)
 }
-
 
 resord<-ord(results)
 edgearsim<-funaux2simDOUBLE(resord)
