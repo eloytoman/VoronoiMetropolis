@@ -91,6 +91,7 @@ ymin <- 0
 ymax <- 20
 ratio <- 2.5
 wid <-5
+histpts0<-histpts
 pointsapa0 <- dplyr::filter(histpts0[[1]], Frame == 100 );
 pointsbasa0 <- dplyr::filter(histpts0[[4]], Frame == 100 );
 pointsapa0 <- pointsapa0[,-3]
@@ -102,13 +103,13 @@ names(pointsbasa0) <- c("x","y","pt")
 
 ggplot_vororonoi_analysis(pointsapical = pointsapa0, pointsbasal = pointsbasa0)
 
-pointsapa5 <- dplyr::filter(histpts5[[1]], Frame == 100 );
-pointsbasa5 <- dplyr::filter(histpts5[[4]], Frame == 100 );
-pointsapa5 <- pointsapa5[,-3]
-pointsbasa5 <- pointsbasa5[,-3]
-pointsapa5[,3] <- 1:100
-pointsbasa5[,3]<- 1:100
-names(pointsapa5) <- c("x","y","pt")
-names(pointsbasa5) <- c("x","y","pt")
+# pointsapa5 <- dplyr::filter(histpts5[[1]], Frame == 100 );
+# pointsbasa5 <- dplyr::filter(histpts5[[4]], Frame == 100 );
+# pointsapa5 <- pointsapa5[,-3]
+# pointsbasa5 <- pointsbasa5[,-3]
+# pointsapa5[,3] <- 1:100
+# pointsbasa5[,3]<- 1:100
+# names(pointsapa5) <- c("x","y","pt")
+# names(pointsbasa5) <- c("x","y","pt")
 
 ggplot_vororonoi_analysis(pointsapical = pointsapa5, pointsbasal = pointsbasa5)
