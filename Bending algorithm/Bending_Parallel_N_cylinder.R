@@ -147,7 +147,7 @@ library(doParallel)
   #comienza el programa
   
   
-  metropolisad<-function(seed = 666, steps = 250, n = 100, Layers = 5,
+  metropolisad_ben<-function(seed = 666, steps = 250, n = 100, Layers = 5,
                          RadiusA = 5/(2*pi), Ratio = 2.5, cyl_length = 20,
                          gamma_ad = 0.15, lambda_ad = 0.04, alpha = 1, beta = 100){
     
@@ -238,7 +238,7 @@ library(doParallel)
   
   results <- foreach(i=1000:1003,
                      .combine = rbind, .packages = "deldir") %dopar% {
-    do.call(metropolisad, list(seed = i, steps = 2, L=5, Ratio = 10))
+    do.call(metropolisad_ben, list(seed = i, steps = 2, L=5, Ratio = 10))
   }
   
   stopCluster(cl)
