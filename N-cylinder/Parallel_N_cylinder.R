@@ -21,14 +21,15 @@ library(doParallel)
     return(pt)
   }
   
-  tesellation_energy_N<-function(xt, yt, A0, rec, rad, gamad, lamad, n, Layer){
+  tesellation_energy_N<-function(xt, yt, A0, rec, rad, gamad, lamad, n, Layer, s0){
     
     tesener<-sapply(1:Layer,function(i) {
       tesel<-deldir(xt*(rad[[i]]/rad[[1]]), yt, rw = rec[[i]])
       tilest<-tile.list(tesel)[(n+1):(2*n)]
       perims<-(tilePerim(tilest)$perimeters)/sqrt(A0)
       areas<-sapply(tilest,function(x){x$area})/A0
-      sum((areas-1)^2+(gamad/2)*(perims^2)+lamad*perims)
+      gam<-gamad*exp((1-(rad[[i]]/rad[[1]]))/s0)
+      sum((areas-1)^2+(gam/2)*(perims^2)+lamad*perims)
     })
     return(sum(tesener)/Layer)
   }
@@ -102,7 +103,7 @@ library(doParallel)
   
   metropolisad<-function(seed = 666, steps = 250, n = 100, L=5,
                          RadiusA = 5/(2*pi), Ratio = 2.5, cyl_length = 20,
-                         gamma_ad = 0.15, lambda_ad = 0.04, beta = 100){
+                         gamma_ad = 0.15, lambda_ad = 0.04, beta = 100, s0=1){
     
     
     #We define our variables
@@ -142,7 +143,7 @@ library(doParallel)
     points <- data.frame(x=x,y=y)
     pointsinit <- points
     energytesel <- tesellation_energy_N(points$x, points$y, Am, rec , rad,
-                                        gamma_ad, lambda_ad, n, L)
+                                        gamma_ad, lambda_ad, n, L, s0)
     energyinit <- energytesel
     
     #We create the variables to store the results
@@ -162,7 +163,7 @@ library(doParallel)
         points2<-move_points(points,cyl_width_A,cyl_length,r,n)
         energytesel2<-tesellation_energy_N(points2$x, points2$y, Am,
                                                 rec, rad, 
-                                                gamma_ad, lambda_ad, n, L)
+                                                gamma_ad, lambda_ad, n, L, s0)
         c<-choice_metropolis(energytesel2-energytesel,beta)
         cond <- c==1
         if(cond){

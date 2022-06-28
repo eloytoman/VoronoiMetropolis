@@ -30,7 +30,7 @@ library(doParallel)
   }
   
   bending_tesellation_energy_N <- function(points, A0, rec, rad, gamad, lamad,
-                                           alpha = 1, n, Lay = 3){
+                                           alpha = 1, n, Lay = 3, s0=1){
     
     tesener <- sapply(1:Lay, function(i){
       
@@ -40,7 +40,7 @@ library(doParallel)
       perims <- (tilePerim(tilest)$perimeters)/sqrt(A0)
       areas <- sapply(tilest,function(x){x$area/A0})
       
-      gam<-gamad*exp((1-(rad[[i]]/rad[[1]]))/1)
+      gam<-gamad*exp((1-(rad[[i]]/rad[[1]]))/s0)
       
       sum((areas-1)^2+(gam/2)*(perims^2)+lamad*perims)
     })
@@ -149,7 +149,9 @@ library(doParallel)
   
   metropolisad_ben<-function(seed = 666, steps = 250, n = 100, Layers = 5,
                          RadiusA = 5/(2*pi), Ratio = 2.5, cyl_length = 20,
-                         gamma_ad = 0.15, lambda_ad = 0.04, alpha = 1, beta = 100){
+                         gamma_ad = 0.15, lambda_ad = 0.04, s0 = 1,
+                         alpha = 1, beta = 100,
+                         ){
     
     
     #We define our variables
@@ -192,7 +194,7 @@ library(doParallel)
     
     pointsinit <- points
     energytesel <- bending_tesellation_energy_N(points, Am, rec , rad,
-                                        gamma_ad, lambda_ad, alpha, n, Layers)
+                                        gamma_ad, lambda_ad, alpha, n, Layers, s0)
     
     #We create the variables to store the results
     
@@ -213,7 +215,8 @@ library(doParallel)
                                        n, Layers, rad)
         
         energytesel2 <- bending_tesellation_energy_N(points2, Am, rec, rad,
-                                           gamma_ad, lambda_ad, alpha, n, Lay = Layers)
+                                           gamma_ad, lambda_ad, alpha, n,
+                                           Lay = Layers, s0)
         c <- choice_metropolis(energytesel2-energytesel, beta)
         cond <- c==1
         if(cond){
