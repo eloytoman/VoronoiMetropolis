@@ -13,7 +13,7 @@ byareaenergy<-function(points){
   areas<-sapply(tilest,function(x){x$area})
   points[,4]<-c(areas,areas,areas)
   perim_ad<-(tilePerim(tilest)$perimeters)/sqrt(A0)
-  areas_ad<-areas/A0
+  areas_ad<-(areas)/A0
   encells<-(areas_ad-1)^2+(gam_ad/2)*perim_ad+lambda_ad*perim_ad
   points[,5]<-c(encells,encells,encells)
   
@@ -21,34 +21,36 @@ byareaenergy<-function(points){
   return(points)
 }
 
-df<-data.frame(x=c(),y=c(),Frame=c(), area=c(),energy=c())
+ptshist_df<-data.frame(x=c(),y=c(),Frame=c(), area=c(),energy=c())
 
-for (i in 1:pasos) {
-  a<-length(df$x)
-  df[(a+1):(a+3*n),c(1,2,3,4,5)]<-byareaenergy(filter(histpts, Frame == i))
+for (i in 1:100) {
+  a<-length(ptshist_df$x)
+  ptshist_df[(a+1):(a+3*n),c(1,2,3,4,5)]<-byareaenergy(dplyr::filter(histpts, Frame == i))
 }
 
 # Load data source and give columns names
-names(df)<-c("x","y","Frame","Area of the cell","Relative energy of the cell")
-ptshist_df<-df
+names(ptshist_df)<-c("x","y","Frame","Area of the cell","Relative energy of the cell")
 
 minar<-min(df$`Area of the cell`)
 maxar<-max(df$`Area of the cell`)
 
 # Filtering for just first frame
-ff_total <- byareaenergy(filter(histpts, Frame == 1))
+ff_total1 <- byareaenergy(filter(histpts, Frame == 1))
+ff_total100 <- byareaenergy(filter(histpts, Frame == 100))
 
 # Defining pitch size for voronoi plot
 rectangle <- data.frame(x=c(xmin,xmin,xmax+2*wid,xmax+2*wid),y=c(ymin,ymax,ymax,ymin))
 
 # Make first frame and test what image looks like
-ff <- ggplot(ff_total,aes(x,y)) +
-  geom_voronoi(aes(fill=`Area of the cell`),size=.125, outline = rectangle) +
-  geom_vline(xintercept = xmax,color = 'white',linetype='solid',size=0.5) +
+ff <- ggplot(ff_total1,aes(x,y)) +
+  geom_voronoi(aes(fill=area), size=.125, outline = rectangle) +
+  geom_vline(xintercept = xmax ,color = 'white',linetype='solid',size=0.5) +
   geom_vline(xintercept = xmax+wid,color = 'white',linetype='solid',size=0.5) +
-  stat_voronoi(geom="path",outline = rectangle) +
+  stat_voronoi(geom="path", outline = rectangle) +
   geom_point(size=3) +
-  scale_fill_gradient(low = "dark orange", high = "white", limits=c(minar,maxar))+
+  scale_fill_gradient(low = "dark blue", high = "white",
+                      limits=c(min(ff_total1$area),
+                               max(ff_total1$area)))+
   theme(
     panel.grid.major = element_blank() # Remove gridlines (major)
     ,panel.grid.minor = element_blank() # Remove gridlines (minor)
@@ -68,11 +70,19 @@ ff <- ggplot(ff_total,aes(x,y)) +
        ,subtitle = "         Metropolis' Algorithm"
        ,caption = "Author: Eloy Serrano       ")
 
+show(ff)
+
 # Create test image
 ggsave(filename = paste0("frame_",1,".png") # filename
        ,plot = ff # variable for file
        ,width = 10, height = 7, dpi = 300, units = "in") # dimensions and image quality
 #This will generate an image "test.png" which you can check whether this is the output you want for you gif, if not amend the code above.
+save(filename = paste0("frame_",1,".png") # filename
+     ,plot = ff # variable for file
+     ,width = 10, height = 7, dpi = 300, units = "in") # dimensions and image quality
+#This will generate an image "test.png" which you can check whether this is the output you want for you gif, if not amend the code above.
+
+
 
 minframe<-min(ptshist_df$Frame)
 # Loop through all frames
