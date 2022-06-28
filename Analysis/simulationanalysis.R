@@ -86,18 +86,18 @@ stationarylewis<-function(edgear){
   }
   
   meandat <- data.frame(edges=numeric(), meanfrec=numeric())
-  variancedat <- data.frame(edges=numeric(),variance=numeric())
+  varcoefdat <- data.frame(edges=numeric(),varcoef=numeric())
   
   for (j in mined:maxed) {
     dat2<-dplyr::filter(datahist, edges==j)
     pos<-j-mined+1
     meandat[pos,c(1,2)]<-c(j,mean(dat2$frec))
-    variancedat[pos,c(1,2)]<-c(j,var(dat2$frec))
+    varcoefdat[pos,c(1,2)]<-c(j,var(dat2$frec)/mean(dat2$frec))
   }
   
   print(datahist)
   print(meandat)
-  print(variancedat)
+  print(varcoefdat)
   
   histedges<-ggplot(meandat,aes(edges,meanfrec/sum(meanfrec)))+
     geom_col(colour="#F8766D", fill="#7CAE00", alpha=0.6)+
