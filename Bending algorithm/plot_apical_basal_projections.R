@@ -113,3 +113,7 @@ ggplot_vororonoi_analysis(pointsapical = pointsapa0, pointsbasal = pointsbasa0)
 # names(pointsbasa5) <- c("x","y","pt")
 
 ggplot_vororonoi_analysis(pointsapical = pointsapa5, pointsbasal = pointsbasa5)
+
+
+
+

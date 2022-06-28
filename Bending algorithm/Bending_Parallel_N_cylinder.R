@@ -40,7 +40,9 @@ library(doParallel)
       perims <- (tilePerim(tilest)$perimeters)/sqrt(A0)
       areas <- sapply(tilest,function(x){x$area/A0})
       
-      sum((areas-1)^2+(gamad/2)*(perims^2)+lamad*perims)
+      gam<-gamad*exp((1-(rad[[i]]/rad[[1]]))/1)
+      
+      sum((areas-1)^2+(gam/2)*(perims^2)+lamad*perims)
     })
     
     bendener <- sapply(2:(Lay-1), function(i){

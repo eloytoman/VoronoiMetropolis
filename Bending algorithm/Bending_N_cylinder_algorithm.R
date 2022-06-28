@@ -34,7 +34,8 @@ bending_tesellation_energy_N<-function(points){
     tilest<-tile.list(tesel)[(n+1):(2*n)]
     perims<-(tilePerim(tilest)$perimeters)/sqrt(A0)
     areas<-sapply(tilest,function(x){x$area/A0})
-    sum((areas-1)^2+(gamma_ad/2)*(perims^2)+lambda_ad*perims)
+    gam<-gamma_ad*exp((1-(rad[[i]]/rad[[1]]))/1)
+    sum((areas-1)^2+(gam/2)*(perims^2)+lambda_ad*perims)
   })
   
   bendener<- sapply(2:(L-1), function(i){
@@ -159,6 +160,7 @@ A0 <- (((Radius2+Radius)/2)*2*pi*cyl_length)/n
 
 rec <- list()
 rad <- list()
+
 for(k in 1:L){
   rad[[k]]<- Radius+(k-1)*(cyl_thickness/(L-1)) #the radius of the layer k
   rec[[k]]<-c(xmin,xmin+3*(2*pi*rad[[k]]),ymin,ymax)
@@ -189,8 +191,8 @@ for (i in 1:L) {
 }
 
 for (i in 1:L) {
-  histpts[[i]][1:300,c(1,2)] <- points[[i]]
-  histpts[[i]][1:300,3] <- i+1
+  histpts[[i]][1:(3*n),c(1,2)] <- points[[i]]
+  histpts[[i]][1:(3*n),3] <- i+1
 }
 
 
@@ -225,7 +227,7 @@ energyinit
 energytesel
 
 energhist$energy <- energhist$energy/n
-plot_energy(energhist)
+plot_energy(energhist5)
 
 #(points$x, points$y, rect = rec,
 #              "Relative area of the cells by sides. Apical surface",
