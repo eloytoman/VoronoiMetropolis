@@ -426,14 +426,16 @@ plotenergies(results = results)
 
 ####BENDINGGGG
 
-bending_energy_layers_sim1 <- function(histpts,it = 300){
+bending_energy_layers_sim1 <- function(histpts,it =550){
   
   tesener <- data.frame( iter = 1:it,
                          enlay1 = double(it),
+                         enlay2 = double(it),
                          enlay3 = double(it),
                          enlay5 = double(it),
                          enlay6 = double(it),
                          enlay8 = double(it),
+                         enlay9 = double(it),
                          enlay10 = double(it))
   
   for (i in 2:it) {
@@ -443,7 +445,11 @@ bending_energy_layers_sim1 <- function(histpts,it = 300){
       ener[[k]] <- energy_1_layer_bending(histpts, rec[[j]], rad, i = j, it = i)
       k<-k+1
     }
-    tesener[i,c(2,3,4,5,6,7)] <- ener
+    tesener[i,c(3,4,5,6,7,8)] <- ener
+    points1 <- filter(histpts[[1]],Frame==i)
+    points10 <- filter(histpts[[10]],Frame==i)
+    tesener[1,2]<-energy_1_layer(points1$x,points1$y, rec[[1]],1)
+    tesener[1,9]<-energy_1_layer(points10$x,points10$y,rec[[10]],10)
   }
   return(tesener)
 }
@@ -464,7 +470,7 @@ energy_1_layer_bending <- function(histpts, rect, rad, i, it, Lay =10, n=100){
   gam<-gamad*exp((1-(rad[[i]]/rad[[1]]))/1 )
   
   tesener<-sum((areas-1)^2+(gam/2)*(perims^2)+
-                 lamad*perims)/Lay
+                 lamad*perims)/(Lay*n)
   
   angles <- numeric(n)
   
@@ -488,7 +494,7 @@ energy_1_layer_bending <- function(histpts, rect, rad, i, it, Lay =10, n=100){
                    (norm(vec1,type = "2")*norm(vec2,type = "2")),-1.0),1.0)
     angles[j] <- acos(v)
   }
-    bendener <- sum(alpha*((angles-pi)^2))/(Lay)
+    bendener <- sum(alpha*((angles-pi)^2))/(Lay*n)
   
   return(tesener+bendener)
 }
@@ -496,23 +502,29 @@ energy_1_layer_bending <- function(histpts, rect, rad, i, it, Lay =10, n=100){
 plot_energy_decomp_bending<-function(tesenerdec){
   
   ploten <- ggplot(tesenerdec, aes(x = iter))+
-    geom_line(aes(y = enlay1, colour = "Second layer"))+
+    geom_line(aes(y = enlay1, colour = "First layer"))+
+    geom_line(aes(y = enlay2, colour = "Second layer"))+
     geom_line(aes(y = enlay3, colour = "Third layer"))+
     geom_line(aes(y = enlay5, colour = "Fifth layer"))+
     geom_line(aes(y = enlay6, colour = "Sixth layer"))+
     geom_line(aes(y = enlay8, colour = "Eight layer"))+
-    geom_line(aes(y = enlay10, colour = "Ninth layer"))+
+    geom_line(aes(y = enlay9, colour = "Ninth layer"))+
+    geom_line(aes(y = enlay10, colour = "Tenth layer"))+
     labs(title = "Evolution of system energies by layer",
          x = "Iteration", y = "Average energy per cell",
          color = "Energy type") +
     scale_colour_manual("",
-                        breaks = c("Second layer",
+                        breaks = c("First layer",
+                                   "Second layer",
                                    "Third layer",
                                    "Fifth layer",
                                    "Sixth layer",
                                    "Eight layer",
-                                   "Ninth layer"),
-                        values = c("red",
+                                   "Ninth layer",
+                                   "Tenth layer"),
+                        values = c("cyan",
+                                   "darkgreen",
+                                   "red",
                                    "darkcyan",
                                    "magenta",
                                    "orange",
