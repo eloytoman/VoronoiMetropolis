@@ -101,7 +101,7 @@ pointsbasa0[,3]<- 1:100
 names(pointsapa0) <- c("x","y","pt")
 names(pointsbasa0) <- c("x","y","pt")
 
-ggplot_vororonoi_analysis(pointsapical = pointsapa0, pointsbasal = pointsbasa0)
+ggplot_vororonoi_analysis(pointsapical = points[[1]], pointsbasal = points[[12]])
 
 # pointsapa5 <- dplyr::filter(histpts5[[1]], Frame == 100 );
 # pointsbasa5 <- dplyr::filter(histpts5[[4]], Frame == 100 );
@@ -112,7 +112,7 @@ ggplot_vororonoi_analysis(pointsapical = pointsapa0, pointsbasal = pointsbasa0)
 # names(pointsapa5) <- c("x","y","pt")
 # names(pointsbasa5) <- c("x","y","pt")
 
-ggplot_vororonoi_analysis(pointsapical = pointsapa5, pointsbasal = pointsbasa5)
+
 
 
 

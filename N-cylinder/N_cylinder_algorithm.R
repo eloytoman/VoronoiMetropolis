@@ -95,12 +95,25 @@ plot_energy<-function(en){
     geom_line(colour="#F8766D")+
     xlab("Iteration of the algorithm")+
     ylab("Average energy of the cells")+
-    ggtitle("Energy relaxation of the tesselation")
+    ggtitle("Energy relaxation of the algorithm")
   show(ploten)
 }
 
-
-
+nu_sq <- function(points, rec, RadB= 2.5*5/(2*pi) , n=100){
+  Lay <- length(rec)
+  teselap <- deldir(points$x, points$y, rw = rec[[1]])
+  teselba <- deldir(RadB*points$x, points$y, rw = rec[[Lay]])
+  tilap <- tile.list(teselap)[(n+1):(2*n)]
+  tilba <- tile.list(teselba)[(n+1):(2*n)]
+  
+  cellsdf<-data.frame(edgesA=integer(),edgesB=integer())
+  for (i in 1:length(tilap)) {
+    cellsdf[i,c(1,2)]<-c(length(tilap[[i]]$x),length(tilba[[i]]$x))
+  }
+  num <- sum((cellsdf[,1]-cellsdf[,2])^2)/n
+  den <- 2*(sum(cellsdf[,1])/n)*(sum(cellsdf[,2])/n)
+  return(num/den)
+}
 
 gamma_ad <- 0.15
 lambda_ad <- 0.04
@@ -127,9 +140,7 @@ r <- cyl_width/n
 bet <- 10
 steps <- 50
 
-
-A0 <- (cyl_width*(ymax-ymin))/n
-
+A0 <- ((Radius2+Radius)*pi*cyl_length)/n
 
 x1 <- runif(n,xmin,xmax)
 y1 <- runif(n,ymin,ymax)
@@ -174,6 +185,9 @@ for (j in 1:steps) {
   energhist[j+1,c(1,2)] <- c(j,energytesel)
 }
 save(histpts,energhist, file = "data300it.Rds")
+
+nu2 <- nu_sq(points = points, rec = rec, n = n)
+
 energyinit
 energytesel
 

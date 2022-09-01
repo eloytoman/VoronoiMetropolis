@@ -1,6 +1,6 @@
 library(deldir)
 library(ggplot2)
-library(ggvoronoi)
+#library(ggvoronoi)
 library(gganimate)
 library(dplyr)
 library(plotly)
@@ -10,19 +10,19 @@ library(doParallel)
 
   bending_move_points<-function(pt, wid, len, rc, n = 100, Lay = 3, rad){
     
-    ind<-sample(1:n,1)
+    ind <-sample(1:n,1)
     
-    pt<- lapply(1:Lay, function(i){
+    pt <- lapply(1:Lay, function(i){
       
       ptinx <- pt[[i]]$x[[ind]]+rnorm(1,mean=0,sd=rc)
       ptiny <- pt[[i]]$y[[ind]]+rnorm(1,mean=0,sd=rc)
-      rd <- (rad[[i]]/rad[[1]])
-      while((ptinx < 0 || ptinx > (rd*wid)) ||
+      s <- (rad[[i]]/rad[[1]])
+      while((ptinx < 0 || ptinx > (s*wid)) ||
             (ptiny < 0 || ptiny > len)){
         ptinx <- pt[[i]]$x[[ind]] + rnorm(1, mean=0, sd=rc)
         ptiny <- pt[[i]]$y[[ind]] + rnorm(1, mean=0, sd=rc)
       }
-      pt[[i]]$x[c(ind,ind+n,ind+2*n)] <- c(ptinx, ptinx+rd*wid, ptinx+2*rd*wid)
+      pt[[i]]$x[c(ind,ind+n,ind+2*n)] <- c(ptinx, ptinx+s*wid, ptinx+2*s*wid)
       pt[[i]]$y[c(ind,ind+n,ind+2*n)] <- ptiny
       pt[[i]]
     })
@@ -31,6 +31,8 @@ library(doParallel)
   
   bending_tesellation_energy_N <- function(points, A0, rec, rad, gamad, lamad,
                                            alpha = 1, n, Lay = 3, s0=1){
+    
+    tesener <- numeric(L)
     
     tesener <- sapply(1:Lay, function(i){
       
@@ -64,7 +66,7 @@ library(doParallel)
         vec2 <- ptinf - ptcentral
         
         #We use pmin and pmax to avoid errors in the arc-cosine computation
-        v<-pmin(pmax(((vec1%*%vec2)[1,1])/
+        v <- pmin(pmax(((vec1%*%vec2)[1,1])/
                        (norm(vec1,type = "2")*norm(vec2,type = "2")),-1.0),1.0)
         ang <- acos(v)        
         return(ang)
@@ -80,14 +82,14 @@ library(doParallel)
     
     p<-numeric(1)
     
-    if(delta<=0){p<-1}else if(-delta*beta==0){p<-0}else{p<-exp(-delta*beta)}
+    if(delta<=0){p<-1}else if(exp(-delta*beta)==Inf){p<-0}else{p<-exp(-delta*beta)}
     
     a=sample(c(0,1), size = 1, replace=TRUE, prob = c(1-p,p))
     
     return(a)
   }
 
-  ggplotvor<-function(plotpoints,tit,wid){
+  ggplotvor<-function(plotpoints,tit,wid = 5){
     rectangle <- data.frame(x=c(xmin,xmin,xmax+2*wid,xmax+2*wid),y=c(ymin,ymax,ymax,ymin))
     pl <- ggplot(plotpoints,aes(x,y)) +
       geom_voronoi(aes(fill=as.factor(y)),size=.125, outline = rectangle,show.legend = FALSE) +
@@ -144,14 +146,29 @@ library(doParallel)
     show(ploten)
   }
   
+  nu_sq <- function(points, rec, n=100){
+    Lay <- length(points)
+    teselap <- deldir(points[[1]]$x, points[[1]]$y, rw = rec[[1]])
+    teselba <- deldir(points[[Lay]]$x, points[[Lay]]$y, rw = rec[[Lay]])
+    tilap <- tile.list(teselap)[(n+1):(2*n)]
+    tilba <- tile.list(teselba)[(n+1):(2*n)]
+    
+    cellsdf<-data.frame(edgesA=integer(),edgesB=integer())
+    for (i in 1:length(tilap)) {
+      cellsdf[i,c(1,2)]<-c(length(tilap[[i]]$x),length(tilba[[i]]$x))
+    }
+    num <- sum((cellsdf[,1]-cellsdf[,2])^2)/n
+    den <- 2*(sum(cellsdf[,1])/n)*(sum(cellsdf[,2])/n)
+    return(num/den)
+  }
+  
   #comienza el programa
   
   
   metropolisad_ben<-function(seed = 666, steps = 250, n = 100, Layers = 5,
                          RadiusA = 5/(2*pi), Ratio = 2.5, cyl_length = 20,
                          gamma_ad = 0.15, lambda_ad = 0.04, s0 = 1,
-                         alpha = 1, beta = 100,
-                         ){
+                         alpha = 1, beta = 100){
     
     
     #We define our variables
@@ -170,7 +187,7 @@ library(doParallel)
     ymax <- cyl_length
     
     r <- cyl_width_A/n #radius to make the moves
-    Am <- (((RadiusA+RadiusB)/2)*(cyl_length))/n
+    Am <- ((RadiusA+RadiusB)*pi*cyl_length)/n
     
     rec <- list()
     rad <- list()
@@ -233,7 +250,8 @@ library(doParallel)
       gc()
     }
     save(histpts, file = paste0("results_", i, ".Rds"))
-    return(list(histpts,energhist))
+    nu2 <- nu_sq(points = points, rec = rec, n = 100)
+    return(list(histpts,energhist,nu2))
   }
   
   cl <- makeCluster(4)

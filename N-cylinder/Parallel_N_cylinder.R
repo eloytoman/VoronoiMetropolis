@@ -98,6 +98,22 @@ library(doParallel)
     show(ploten)
   }
   
+  
+  nu_sq <- function(points, rec, RadB= 2.5*5/(2*pi) , n=100){
+    Lay <- length(rec)
+    teselap <- deldir(points$x, points$y, rw = rec[[1]])
+    teselba <- deldir(RadB*points$x, points$y, rw = rec[[Lay]])
+    tilap <- tile.list(teselap)[(n+1):(2*n)]
+    tilba <- tile.list(teselba)[(n+1):(2*n)]
+    
+    cellsdf<-data.frame(edgesA=integer(),edgesB=integer())
+    for (i in 1:length(tilap)) {
+      cellsdf[i,c(1,2)]<-c(length(tilap[[i]]$x),length(tilba[[i]]$x))
+    }
+    num <- sum((cellsdf[,1]-cellsdf[,2])^2)/n
+    den <- 2*(sum(cellsdf[,1])/n)*(sum(cellsdf[,2])/n)
+    return(num/den)
+  }
   #comienza el programa
   
   
@@ -177,21 +193,22 @@ library(doParallel)
       energhist[j+1,c(1,2)]<-c(j,energytesel)
       energytesel
     }
-    return(list(histpts,energhist))
+    nu2 <- nu_sq(points = points, rec = rec, n = 100)
+    return(list(histpts,energhist,nu2))
   }
   
-  
-  cl <- makeCluster(4)
-  registerDoParallel(cl)
-  
-  
-  results<-foreach(i=c(10,20), .combine = rbind, .packages = "deldir") %dopar% {
-    metropolisad(seed = 1000, steps = 3, L=i)
-  }
-  
-  stopCluster(cl)
-  
-  stopImplicitCluster()
-  
-  save(results, file = "results.Rds")
+# 
+#   cl <- makeCluster(4)
+#   registerDoParallel(cl)
+# 
+# 
+#   results<-foreach(i=c(10,20), .combine = rbind, .packages = "deldir") %dopar% {
+#     metropolisad(seed = 1000, steps = 3, L=i)
+#   }
+# 
+#   stopCluster(cl)
+# 
+#   stopImplicitCluster()
+
+  # save(results, file = "results.Rds")
   

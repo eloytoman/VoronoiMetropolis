@@ -34,11 +34,11 @@ bending_tesellation_energy_N<-function(points){
     tilest<-tile.list(tesel)[(n+1):(2*n)]
     perims<-(tilePerim(tilest)$perimeters)/sqrt(A0)
     areas<-sapply(tilest,function(x){x$area/A0})
-    gam<-gamma_ad*exp((1-(rad[[i]]/rad[[1]]))/1)
+    gam<-gamma_ad*exp((1-(rad[[i]]/rad[[1]]))/s0)
     sum((areas-1)^2+(gam/2)*(perims^2)+lambda_ad*perims)
   })
   
-  bendener<- sapply(2:(L-1), function(i){
+  bendener <- sapply(2:(L-1), function(i){
     angles <- sapply(1:n, function(j){
       ptcentral <- c(points[[i]]$y[j],
                      rad[[i]]*cos((1/rad[[i]])*points[[i]]$x[j]),
@@ -54,8 +54,8 @@ bending_tesellation_energy_N<-function(points){
       
       vec1 <- ptsup - ptcentral
       vec2 <- ptinf - ptcentral
-      v<-pmin(pmax(((vec1%*%vec2)[1,1])/
-                     (norm(vec1,type = "2")*norm(vec2,type = "2")),-1.0),1.0)
+      v <- pmin(pmax(((vec1%*%vec2)[1,1])/
+                       (norm(vec1,type = "2")*norm(vec2,type = "2")),-1.0),1.0)
       ang <- acos(v)
       return(ang)
     })
@@ -130,6 +130,22 @@ plot_energy<-function(en){
   show(ploten)
 }
 
+nu_sq <- function(points, rec, n=100){
+  Lay <- length(points)
+  teselap <- deldir(points[[1]]$x, points[[1]]$y, rw = rec[[1]])
+  teselba <- deldir(points[[Lay]]$x, points[[Lay]]$y, rw = rec[[Lay]])
+  tilap <- tile.list(teselap)[(n+1):(2*n)]
+  tilba <- tile.list(teselba)[(n+1):(2*n)]
+  
+  cellsdf<-data.frame(edgesA=integer(),edgesB=integer())
+  for (i in 1:length(tilap)) {
+    cellsdf[i,c(1,2)]<-c(length(tilap[[i]]$x),length(tilba[[i]]$x))
+  }
+  num <- sum((cellsdf[,1]-cellsdf[,2])^2)/n
+  den <- 2*(sum(cellsdf[,1])/n)*(sum(cellsdf[,2])/n)
+  return(num/den)
+}
+
 gamma_ad <- 0.15
 lambda_ad <- 0.04
 alpha <- 1
@@ -156,7 +172,9 @@ r <- cyl_width/n
 bet <- 10
 steps <- 20
 
-A0 <- (((Radius2+Radius)/2)*2*pi*cyl_length)/n
+s0<-1
+
+A0 <- ((Radius2+Radius)*pi*cyl_length)/n
 
 rec <- list()
 rad <- list()
@@ -176,7 +194,6 @@ y <- c(y1,y1,y1)
 points <- vector(mode = "list", length = L)
 points <- lapply(1:L, function(i){data.frame(x=(rad[[i]]/Radius)*x,y=y)})
 
-
 pointsinit <- points
 
 energytesel <- bending_tesellation_energy_N(points)
@@ -187,14 +204,13 @@ energhist[1,c(1,2)] <- c(0,energyinit)
 histpts <- vector(mode="list", length = L)
 
 for (i in 1:L) {
-    histpts[[i]] <- data.frame(x = double(3*n*steps), y = double(3*n*steps), Frame = double(3*n*steps))
+  histpts[[i]] <- data.frame(x = double(3*n*steps), y = double(3*n*steps), Frame = double(3*n*steps))
 }
 
 for (i in 1:L) {
   histpts[[i]][1:(3*n),c(1,2)] <- points[[i]]
   histpts[[i]][1:(3*n),3] <- i+1
 }
-
 
 for (j in 1:steps) {
   for(l in 1:n) {
@@ -223,6 +239,9 @@ for (j in 1:steps) {
   
 }
 save(histpts,energhist, file = "data300it.Rds")
+
+nu2 <- nu_sq(points = points, rec = rec, n = n)
+
 energyinit
 energytesel
 

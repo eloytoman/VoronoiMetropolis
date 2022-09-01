@@ -5,10 +5,10 @@ library(gganimate)
 library(dplyr)
 library(deldir)
 
+histpts<-results[[1]]
 
-
-byareaenergy<-function(points){
-  tesel<-deldir(points$x,points$y,rw=rec)
+byareaenergy<-function(points,rect){
+  tesel<-deldir((points$x)*2.5,points$y,rw=rect)
   tilest<-tile.list(tesel)[(n+1):(2*n)]
   areas<-sapply(tilest,function(x){x$area})
   points[,4]<-c(areas,areas,areas)
@@ -28,27 +28,33 @@ for (i in 1:100) {
   ptshist_df[(a+1):(a+3*n),c(1,2,3,4,5)]<-byareaenergy(dplyr::filter(histpts, Frame == i))
 }
 
+df<-ptshist_df
 # Load data source and give columns names
 names(ptshist_df)<-c("x","y","Frame","Area of the cell","Relative energy of the cell")
 
 minar<-min(df$`Area of the cell`)
 maxar<-max(df$`Area of the cell`)
 
+
 # Filtering for just first frame
-ff_total1 <- byareaenergy(filter(histpts, Frame == 1))
-ff_total100 <- byareaenergy(filter(histpts, Frame == 100))
+ff_total1<- byareaenergy(filter(histpts, Frame == 1),rec[[10]])
+ff_total1$x <- ff_total1$x*2.5
+ff_total150 <- byareaenergy(filter(histpts, Frame == 150), rec[[10]])
+ff_total150$x <- ff_total150$x*2.5
 
 # Defining pitch size for voronoi plot
 rectangle <- data.frame(x=c(xmin,xmin,xmax+2*wid,xmax+2*wid),y=c(ymin,ymax,ymax,ymin))
+rectangle2 <- data.frame(x=c(xmin,xmin,2.5*(xmax+(2*wid)),2.5*(xmax+(2*wid))),y=c(ymin,ymax,ymax,ymin))
+rectangle<-rectangle2
 
 # Make first frame and test what image looks like
-ff <- ggplot(ff_total1,aes(x,y)) +
+ff <- ggplot(ff_total150,aes(x,y)) +
   geom_voronoi(aes(fill=area), size=.125, outline = rectangle) +
   geom_vline(xintercept = xmax ,color = 'white',linetype='solid',size=0.5) +
   geom_vline(xintercept = xmax+wid,color = 'white',linetype='solid',size=0.5) +
   stat_voronoi(geom="path", outline = rectangle) +
   geom_point(size=3) +
-  scale_fill_gradient(low = "dark blue", high = "white",
+  scale_fill_gradient(low = "orange", high = "white",
                       limits=c(min(ff_total1$area),
                                max(ff_total1$area)))+
   theme(
@@ -66,9 +72,8 @@ ff <- ggplot(ff_total1,aes(x,y)) +
     ,axis.title.x = element_blank() # Remove axis label (X-Axis) 
     ,legend.position="right"
   ) +
-  labs(title = "      Evolution of the Voronoi Tesselation" # Title text
-       ,subtitle = "         Metropolis' Algorithm"
-       ,caption = "Author: Eloy Serrano       ")
+  labs(title = "Representation of the Basal surface" # Title text
+       ,subtitle = "         After applying algorithm")
 
 show(ff)
 

@@ -152,7 +152,7 @@ n<-40
 
 r<- wid*2/n #radio en que cambiamos el punto
 bet<-10
-pasos<-50
+pasos<-1
 
 
 A0<-(wid*(ymax-ymin))/n
