@@ -571,4 +571,41 @@ for (j in 1:Lay) {
 save_tessellation_Layers_Bending(points, filename = "cells05.csv")
 
 
+scutoids_perc_cells_1layer <- function(points1x,points1y,points2x,points2y, rec1,rec2, n = 100){
+  
+  tslA<-deldir(points1x,points1y,rw=rec1)
+  tilA<-tile.list(tslA)[(n+1):(2*n)]
+  tslB<-deldir(points2x,points2y,rw=rec2)
+  tilB<-tile.list(tslB)[(n+1):(2*n)]
+  
+  cellsdf<-data.frame(edgesA=integer(),edgesB=integer())
+  countdf<-data.frame(cell=1:100, intercalations=rep(0,100))
+  
+  for (i in 1:length(tilA)) {
+    cellsdf[i,c(1,2)]<-c(length(tilA[[i]]$x),length(tilB[[i]]$x))
+  }
+  for (i in 1:100) {
+    if(cellsdf$edgesA[[i]]!=cellsdf$edgesB[[i]]){countdf$intercalations[[i]]=1}
+  }
+  return(countdf)
+}
+
+
+scutoids_perc_cells_sim_nobend <- function(points, rec, rad, Lay=10){
+  
+  countscut<-data.frame(cell=1:100, intercalations=rep(0,100))
+  for(j in 1:(Lay-1)){
+    countscut$intercalations <- countscut$intercalation +
+      scutoids_perc_cells_1layer(points$x*(rad[[j]]/rad[[1]]),points$y,
+                                 points$x*(rad[[j+1]]/rad[[1]]),points$y,
+                                 rec[[j]],rec[[j+1]])
+  }
+  return(countscut)
+}
+
+points<-filter(histpts, Frame == 300)
+sc_pc <- scutoids_perc_cells_sim_nobend(points, rec, rad)
+perc_sc <-length(filter(sc_pc), intercalations>0)
+print(perc_sc)
+
 

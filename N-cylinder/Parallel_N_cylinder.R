@@ -8,6 +8,15 @@ library(foreach)
 library(doParallel)
 
 
+#FUNCTIONS INVOLVED IN THE ALGORITHM
+
+#to see the functions in detail, see the N_cylinder_algorithm.R script
+#The functions here are the same, excepting that we need more parameters, since
+#we do the function call from another function (and so we don't define global
+# parameters)
+
+#
+
   move_points<-function(pt,wid,len,rc,n){
     ind<-sample(1:n,1)
     ptinx<-pt$x[ind]+rnorm(1,mean=0,sd=rc)
@@ -114,8 +123,15 @@ library(doParallel)
     den <- 2*(sum(cellsdf[,1])/n)*(sum(cellsdf[,2])/n)
     return(num/den)
   }
-  #comienza el programa
   
+  
+  #Program starts
+  
+  
+  #We define a function to run the algorithm, 
+  #this way allows us to run simulations with different parameters at the same
+  #time, calling the function with different initial values
+  #The function works exactly as the script in N_cylinder_algorithm.R
   
   metropolisad<-function(seed = 666, steps = 250, n = 100, L=5,
                          RadiusA = 5/(2*pi), Ratio = 2.5, cyl_length = 20,
@@ -197,18 +213,22 @@ library(doParallel)
     return(list(histpts,energhist,nu2))
   }
   
-# 
-#   cl <- makeCluster(4)
-#   registerDoParallel(cl)
-# 
-# 
-#   results<-foreach(i=c(10,20), .combine = rbind, .packages = "deldir") %dopar% {
-#     metropolisad(seed = 1000, steps = 3, L=i)
-#   }
-# 
-#   stopCluster(cl)
-# 
-#   stopImplicitCluster()
+  
+  
+ #Now the following code allows to do simulations in different cpu cores
+ # at the same time
+
+  cl <- makeCluster(4) #number of cores (4 by default in ordinary laptops)
+  registerDoParallel(cl)
+
+  # We execute the parallel for and store the results
+  results<-foreach(i=c(10,20), .combine = rbind, .packages = "deldir") %dopar% {
+    metropolisad(seed = 1000, steps = 3, L=i)
+  }
+
+  stopCluster(cl) #we stop the clusterization
+
+  stopImplicitCluster()
 
   # save(results, file = "results.Rds")
   

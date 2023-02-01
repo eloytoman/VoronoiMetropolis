@@ -39,11 +39,9 @@ energy_analysis <- function(points){
   
   tesener$Bending_energy[c(1,Lay)]<-0
   
-  for (i in 2:(Lay-1)) {
+  tesener$Bending_energy[2:(Lay-1)] <- sapply(2:(Lay-1), function(i){
     
-    angles <- numeric(n)
-    
-    for (j in 1:n) {
+    angles <- sapply(1:n, function(j){
       ptcentral <- c(points[[i]]$y[j],
                      rad[[i]]*cos((1/rad[[i]])*points[[i]]$x[j]),
                      rad[[i]]*sin((1/rad[[i]])*points[[i]]$x[j]))
@@ -59,12 +57,16 @@ energy_analysis <- function(points){
       vec1 <- ptsup - ptcentral
       vec2 <- ptinf - ptcentral
       
-      v<-pmin(pmax(((vec1%*%vec2)[1,1])/
-                     (norm(vec1,type = "2")*norm(vec2,type = "2")),-1.0),1.0)
-      angles[j] <- acos(v)
-    }
-    tesener$Bending_energy[i] <- sum(alpha*((angles-pi)^2))/(Lay*n)
-  }
+      #We use pmin and pmax to avoid errors in the arc-cosine computation
+      v <- pmin(pmax(((vec1%*%vec2)[1,1])/
+                       (norm(vec1,type = "2")*norm(vec2,type = "2")),-1.0),1.0)
+      ang <- acos(v)        
+      return(ang)
+    })
+    
+    return(sum(alpha*((angles-pi)^2))/(Lay*n))
+  })
+  
   tesener$Total_energy <- tesener$Total_energy+tesener$Bending_energy
   return(tesener)
 }
@@ -315,7 +317,7 @@ ploten <- ggplot(tesenerdec, aes(x = iter))+
 
 gamad <- 0.15
 lamad <- 0.04
-alpha<-2
+alpha<-0.05
 
 cyl_width <- 5
 cyl_length <- 20
@@ -337,7 +339,7 @@ Lay <- 10  #Layers
 lay <- Lay
 r <- cyl_width/n 
 bet <- 10
-steps <- 150
+steps <- 550
 
 A0 <- (((Radius2+Radius)/2)*2*pi*cyl_length)/n
 
@@ -350,7 +352,7 @@ for(k in 1:Lay){
 
 points <- list(Lay)
 for (j in 1:Lay) {
-  points[[j]]<-filter(results[[4]][[j]],Frame==300)
+  points[[j]]<-filter(results[[4]][[j]],Frame==550)
 }
 
 ener<-energy_analysis(points)
@@ -361,7 +363,7 @@ p<-ggplot(ener, aes(x = Layer))+
   geom_line(aes(y = Elastic_energy,colour = "Adhesion energy"))+
   geom_line(aes(y = Contractile_energy, colour = "Contractile energy"))+
   geom_line(aes(x = Layer, y = Bending_energy, colour = "Bending energy"))+
-  labs(title = "Energy Analysis after running the algorithm with Bending. Omega=1",
+  labs(title = "Energy Analysis after 550 iterations of the algorithm with Bending. Omega=0.05",
        x = "Layer Ratio (s=R/Ra)", y = "Average energy per cell",
        color = "Energy type") +
   scale_colour_manual("",
@@ -375,6 +377,7 @@ p<-ggplot(ener, aes(x = Layer))+
                                 "darkgreen",
                                 "orange",
                                 "purple"))
+
 
 show(p)
 
@@ -417,7 +420,7 @@ plotenergies<-function(results,it=551){
                                    "darkgreen",
                                    "purple",
                                    "black"))
-  p <- p + guides(colour=guide_legend(title="Values of Gamma"))
+  p <- p + guides(colour=guide_legend(title="Values of Omega"))
   
   show(p)
   
@@ -432,8 +435,10 @@ bending_energy_layers_sim1 <- function(histpts,it =550){
                          enlay1 = double(it),
                          enlay2 = double(it),
                          enlay3 = double(it),
+                         enlay4 = double(it),
                          enlay5 = double(it),
                          enlay6 = double(it),
+                         enlay7 = double(it),
                          enlay8 = double(it),
                          enlay9 = double(it),
                          enlay10 = double(it))
@@ -441,18 +446,19 @@ bending_energy_layers_sim1 <- function(histpts,it =550){
   for (i in 2:it) {
     ener<-rep(0,6)
     k<-1
-    for (j in c(2,3,5,6,8,9)) {
+    for (j in c(2,3,4,5,6,7,8,9)) {
       ener[[k]] <- energy_1_layer_bending(histpts, rec[[j]], rad, i = j, it = i)
       k<-k+1
     }
-    tesener[i,c(3,4,5,6,7,8)] <- ener
+    tesener[i,c(3,4,5,6,7,8,9,10)] <- ener
     points1 <- filter(histpts[[1]],Frame==i)
     points10 <- filter(histpts[[10]],Frame==i)
-    tesener[1,2]<-energy_1_layer(points1$x,points1$y, rec[[1]],1)
-    tesener[1,9]<-energy_1_layer(points10$x,points10$y,rec[[10]],10)
+    tesener[i,2]<-energy_1_layer(points1$x,points1$y, rec[[1]],1)
+    tesener[i,11]<-energy_1_layer(points10$x,points10$y,rec[[10]],10)
   }
   return(tesener)
 }
+
 
 energy_1_layer_bending <- function(histpts, rect, rad, i, it, Lay =10, n=100){
   
@@ -472,9 +478,7 @@ energy_1_layer_bending <- function(histpts, rect, rad, i, it, Lay =10, n=100){
   tesener<-sum((areas-1)^2+(gam/2)*(perims^2)+
                  lamad*perims)/(Lay*n)
   
-  angles <- numeric(n)
-  
-  for (j in 1:n) {
+  angles <- sapply(1:n, function(j){
     ptcentral <- c(points[[i]]$y[j],
                    rad[[i]]*cos((1/rad[[i]])*points[[i]]$x[j]),
                    rad[[i]]*sin((1/rad[[i]])*points[[i]]$x[j]))
@@ -490,10 +494,12 @@ energy_1_layer_bending <- function(histpts, rect, rad, i, it, Lay =10, n=100){
     vec1 <- ptsup - ptcentral
     vec2 <- ptinf - ptcentral
     
-    v<-pmin(pmax(((vec1%*%vec2)[1,1])/
-                   (norm(vec1,type = "2")*norm(vec2,type = "2")),-1.0),1.0)
-    angles[j] <- acos(v)
-  }
+    #We use pmin and pmax to avoid errors in the arc-cosine computation
+    v <- pmin(pmax(((vec1%*%vec2)[1,1])/
+                     (norm(vec1,type = "2")*norm(vec2,type = "2")),-1.0),1.0)
+    ang <- acos(v)        
+    return(ang)
+  })
     bendener <- sum(alpha*((angles-pi)^2))/(Lay*n)
   
   return(tesener+bendener)
@@ -505,8 +511,10 @@ plot_energy_decomp_bending<-function(tesenerdec){
     geom_line(aes(y = enlay1, colour = "First layer"))+
     geom_line(aes(y = enlay2, colour = "Second layer"))+
     geom_line(aes(y = enlay3, colour = "Third layer"))+
+    geom_line(aes(y = enlay4, colour = "Fourth layer"))+
     geom_line(aes(y = enlay5, colour = "Fifth layer"))+
     geom_line(aes(y = enlay6, colour = "Sixth layer"))+
+    geom_line(aes(y = enlay7, colour = "Seventh layer"))+
     geom_line(aes(y = enlay8, colour = "Eight layer"))+
     geom_line(aes(y = enlay9, colour = "Ninth layer"))+
     geom_line(aes(y = enlay10, colour = "Tenth layer"))+
@@ -517,8 +525,10 @@ plot_energy_decomp_bending<-function(tesenerdec){
                         breaks = c("First layer",
                                    "Second layer",
                                    "Third layer",
+                                   "Fourth layer",
                                    "Fifth layer",
                                    "Sixth layer",
+                                   "Seventh layer",
                                    "Eight layer",
                                    "Ninth layer",
                                    "Tenth layer"),
@@ -526,10 +536,12 @@ plot_energy_decomp_bending<-function(tesenerdec){
                                    "darkgreen",
                                    "red",
                                    "darkcyan",
+                                   "pink",
                                    "magenta",
                                    "orange",
                                    "green",
-                                   "blue"))
+                                   "blue",
+                                   "black"))
   
   show(ploten)
 }
@@ -538,10 +550,8 @@ plot_energy_decomp_bending<-function(tesenerdec){
 
 hist1<-results[[4]]
 tes<-bending_energy_layers_sim1(hist1)
+
 plot_energy_decomp_bending(tes)
-
-
-
 
 
 energy_iteration_bending <- function(histpts, it, n=100, Lay = 10){
@@ -651,8 +661,61 @@ plot_energyss_bending<-function(enerhist){
 }
 
 
-enerben <- energy_analisis_1sim_bending(hist1)
+enerben <- energy_analisis_1sim_bending(hist1, 550)
 plot_energyss_bending(enerben)
 
 
-enerben$benden<-enerben$benden/100
+
+
+bending_tesellation_energy_N <- function(points){
+  
+  tesener<-numeric(L)
+  
+  tesener<-sapply(1:L,function(i) {
+    tesel<-deldir(points[[i]]$x,points[[i]]$y,rw=rec[[i]])
+    tilest<-tile.list(tesel)[(n+1):(2*n)]
+    perims<-(tilePerim(tilest)$perimeters)/sqrt(A0)
+    areas<-sapply(tilest,function(x){x$area/A0})
+    gam<-gamma_ad*exp((1-(rad[[i]]/rad[[1]]))/s0)
+    sum((areas-1)^2+(gam/2)*(perims^2)+lambda_ad*perims)
+  })
+  
+  bendener <- sapply(2:(L-1), function(i){
+    angles <- sapply(1:n, function(j){
+      ptcentral <- c(points[[i]]$y[j],
+                     rad[[i]]*cos((1/rad[[i]])*points[[i]]$x[j]),
+                     rad[[i]]*sin((1/rad[[i]])*points[[i]]$x[j]))
+      
+      ptinf <- c(points[[i-1]]$y[j],
+                 rad[[i-1]]*cos((1/rad[[i-1]])*points[[i-1]]$x[j]),
+                 rad[[i-1]]*sin((1/rad[[i-1]])*points[[i-1]]$x[j]))
+      
+      ptsup <- c(points[[i+1]]$y[j],
+                 rad[[i+1]]*cos((1/rad[[i+1]])*points[[i+1]]$x[j]),
+                 rad[[i+1]]*sin((1/rad[[i+1]])*points[[i+1]]$x[j]))
+      
+      vec1 <- ptsup - ptcentral
+      vec2 <- ptinf - ptcentral
+      v <- pmin(pmax(((vec1%*%vec2)[1,1])/
+                       (norm(vec1,type = "2")*norm(vec2,type = "2")),-1.0),1.0)
+      ang <- acos(v)
+      return(ang)
+    })
+    return(sum(alpha*((angles-pi)^2)))
+  })
+  
+  return((sum(tesener)+sum(bendener))/L)
+}
+
+enertes <- data.frame(iteration=3:550, energy= double(548))
+for(k in 3:550){
+  points<-list(10)
+  for (j in 1:10) {
+    points[[j]]<-filter(hist1[[j]],Frame==k)
+  }
+  enertes[k,2]<-bending_tesellation_energy_N(points)
+}
+plot_energy(enertes)
+gamma_ad<-gamad
+lambda_ad<-lamad
+s0<-1

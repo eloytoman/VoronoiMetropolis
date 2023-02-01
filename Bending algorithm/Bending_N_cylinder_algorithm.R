@@ -4,20 +4,45 @@ library(ggvoronoi)
 library(dplyr)
 library(stats)
 
+# VERSION WITH BENDING  
+#
+# The main difference of this algorithm respect the original one is in the
+# MOVEMENTS of the cells, since each layer moves separately.
+# The other difference is in the ENERGY COMPUTATION, since we add a bending
+# energy component, so the formula changes (and the function to compute it).
+#
+# All of this causes a change in the storage of the points.
+# In the original algorithm, we just store the position of the apical layer, 
+# since we know the position of each cell center in a layer by projections. In 
+# this case, we have to store the position of the cell center in EVERY layer,
+# because we don't project anymore. 
+# That is why insted of a dataframe for the points, here we use a list of 
+# dataframes.
+# The rest of the code is similar to the original algorithm and works the same.
+# Here we document the differences, to see the rest go to N_cylinder_algorithm.R
+# in the N-cylinder folder.
+
+
+
 bending_move_points<-function(pt){
+  
+  #We choose a cell
   
   ind<-sample(1:n,1)
   
+  #Here we apply a movement to each layer. To do it efficiently we use lapply
   pt<- lapply(1:L, function(i){
     
     ptinx <- pt[[i]]$x[[ind]]+rnorm(1,mean=0,sd=r)
     ptiny <- pt[[i]]$y[[ind]]+rnorm(1,mean=0,sd=r)
     rd <- (rad[[i]]/Radius)
+    # Check if the movement is inside the cylinder limits
     while((ptinx < xmin || ptinx > (rd*xmax)) ||
           (ptiny < ymin || ptiny > ymax)){
       ptinx <- pt[[i]]$x[[ind]]+rnorm(1, mean=0, sd=r)
       ptiny <- pt[[i]]$y[[ind]]+rnorm(1, mean=0, sd=r)
     }
+    #Replicate the movement in the 2 copies of the cylinder rectangle
     pt[[i]]$x[c(ind,ind+n,ind+2*n)] <- c(ptinx, ptinx+rd*cyl_width, ptinx+2*rd*cyl_width)
     pt[[i]]$y[c(ind,ind+n,ind+2*n)] <- ptiny
     pt[[i]]
@@ -29,6 +54,8 @@ bending_tesellation_energy_N<-function(points){
   
   tesener<-numeric(L)
   
+  #We compute energy as in the original algorithm
+  
   tesener<-sapply(1:L,function(i) {
     tesel<-deldir(points[[i]]$x,points[[i]]$y,rw=rec[[i]])
     tilest<-tile.list(tesel)[(n+1):(2*n)]
@@ -38,30 +65,45 @@ bending_tesellation_energy_N<-function(points){
     sum((areas-1)^2+(gam/2)*(perims^2)+lambda_ad*perims)
   })
   
+  #We add a bending energy component, depending on the angle that the center 
+  # does with the center above and below itself. That is why the apical and 
+  # basal centers don't have bending energy
   bendener <- sapply(2:(L-1), function(i){
+    
+    #First we compute the angles of every cell with the scalar product
     angles <- sapply(1:n, function(j){
+      
+      #we compute the position of a cell center in a layer of the 3d cylinder
       ptcentral <- c(points[[i]]$y[j],
                      rad[[i]]*cos((1/rad[[i]])*points[[i]]$x[j]),
                      rad[[i]]*sin((1/rad[[i]])*points[[i]]$x[j]))
       
+      #we compute the position of the cell center bellow
       ptinf <- c(points[[i-1]]$y[j],
                  rad[[i-1]]*cos((1/rad[[i-1]])*points[[i-1]]$x[j]),
                  rad[[i-1]]*sin((1/rad[[i-1]])*points[[i-1]]$x[j]))
       
+      #we compute the position of the cell center above
       ptsup <- c(points[[i+1]]$y[j],
                  rad[[i+1]]*cos((1/rad[[i+1]])*points[[i+1]]$x[j]),
                  rad[[i+1]]*sin((1/rad[[i+1]])*points[[i+1]]$x[j]))
       
+      # we compute the scalar product and norm, with some adjustments so that 
+      #the cos is between -1 and 1 (without pmin and pmax sometime we get a
+      #slightly higher or lower result)
       vec1 <- ptsup - ptcentral
       vec2 <- ptinf - ptcentral
       v <- pmin(pmax(((vec1%*%vec2)[1,1])/
                        (norm(vec1,type = "2")*norm(vec2,type = "2")),-1.0),1.0)
-      ang <- acos(v)
-      return(ang)
+      ang <- acos(v) #arcos to get angle
+      return(ang) # we return the angles
     })
+    
+    #we use the angles to apply the bending energy formula
     return(sum(alpha*((angles-pi)^2)))
   })
   
+  #we sum energies and return it, in this case the energy is normalized by layer.
   return((sum(tesener)+sum(bendener))/L)
 }
 
@@ -201,6 +243,11 @@ energyinit <- energytesel
 energhist <- data.frame(iteration=numeric(steps), energy=numeric(steps))
 energhist[1,c(1,2)] <- c(0,energyinit)
 
+
+# Also the storage of the historic and evolution of the algorithm changes, 
+# now we have a list of dataframes, each element of the list is, in order,
+# an iteration of the algorithm (1st element correspond to the first iteration,
+# 2nd element to the 2nd iteration, and so on)
 histpts <- vector(mode="list", length = L)
 
 for (i in 1:L) {
@@ -211,6 +258,11 @@ for (i in 1:L) {
   histpts[[i]][1:(3*n),c(1,2)] <- points[[i]]
   histpts[[i]][1:(3*n),3] <- i+1
 }
+
+
+
+# ALGORITHM STARTS
+
 
 for (j in 1:steps) {
   for(l in 1:n) {
@@ -226,18 +278,19 @@ for (j in 1:steps) {
     gc()
   }
   
-  #We store the points of each layer after each iteration in histpts
+  #We store the points of each layer after each iteration
   
   for (i in 1:L) {
     histpts[[i]][(j*3*n+1):(j*3*n+3*n),c(1,2)] <- points[[i]]
     histpts[[i]][(j*3*n+1):(j*3*n+3*n),3] <- j+1
   }
   
-  #We store the energy of the tessellation after each iteration in energhist
+  #We store the energy of the tessellation after each iteration
   
   energhist[j+1,c(1,2)] <- c(j,energytesel)
   
 }
+
 save(histpts,energhist, file = "data300it.Rds")
 
 nu2 <- nu_sq(points = points, rec = rec, n = n)
