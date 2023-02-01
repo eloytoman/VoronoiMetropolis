@@ -12,15 +12,15 @@ open3d()
 
 
 # plot
-bg3d( col=rgb(0.2,0.8,0.5,0.8) )
+bg3d( col="white" )
 theta <- seq(0, 2*pi, len = 50)
 lon <- seq(0,20, len = 50)
 zero <- seq(0,0, len = 50)
 knot <- cylinder3d(
   center = cbind(zero,lon,zero),
-  radius = 5/(2*pi),
+  radius = 13/(2*pi),
   closed = FALSE)
-shade3d(addNormals(subdivision3d(knot, depth = 2)), col = rgb(0.4,0.2,0.8,0.3))
+shade3d(addNormals(subdivision3d(knot, depth = 2)), col = "red")
 
 # To display in an R Markdown document:
 # rglwidget()
@@ -121,3 +121,17 @@ v <- voronoi(d)
 open3d(windowRect = c(50, 50, 562, 562))
 material3d(lwd = 2)
 plotVoronoiDiagram(v, luminosity = "bright")
+
+
+
+######
+
+
+#extrude3d
+
+x <- c(1:10, 10:1)
+y <- rev(c(rep(c(0, 2), 5), rep(c(1.5, -0.5), 5)))
+plot(x, y)
+polygon(x, y)
+open3d()
+shade3d( extrude3d(x, y), col = "red" )

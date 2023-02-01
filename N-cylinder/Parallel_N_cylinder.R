@@ -8,6 +8,15 @@ library(foreach)
 library(doParallel)
 
 
+#FUNCTIONS INVOLVED IN THE ALGORITHM
+
+#to see the functions in detail, see the N_cylinder_algorithm.R script
+#The functions here are the same, excepting that we need more parameters, since
+#we do the function call from another function (and so we don't define global
+# parameters)
+
+#
+
   move_points<-function(pt,wid,len,rc,n){
     ind<-sample(1:n,1)
     ptinx<-pt$x[ind]+rnorm(1,mean=0,sd=rc)
@@ -21,17 +30,17 @@ library(doParallel)
     return(pt)
   }
   
-  tesellation_energy_N<-function(xt, yt, A0, rec, rad, gamad, lamad, n, L){
-    tesener<-numeric(L)
+  tesellation_energy_N<-function(xt, yt, A0, rec, rad, gamad, lamad, n, Layer, s0){
     
-    tesener<-sapply(1:L,function(i) {
-      tesel<-deldir(xt*(rad[[i]]/rad[[1]]),yt,rw=rec[[i]])
+    tesener<-sapply(1:Layer,function(i) {
+      tesel<-deldir(xt*(rad[[i]]/rad[[1]]), yt, rw = rec[[i]])
       tilest<-tile.list(tesel)[(n+1):(2*n)]
       perims<-(tilePerim(tilest)$perimeters)/sqrt(A0)
       areas<-sapply(tilest,function(x){x$area})/A0
-      sum((areas-1)^2+(gamad/2)*(perims^2)+lamad*perims)
+      gam<-gamad*exp((1-(rad[[i]]/rad[[1]]))/s0)
+      sum((areas-1)^2+(gam/2)*(perims^2)+lamad*perims)
     })
-    return(sum(tesener)/L)
+    return(sum(tesener)/Layer)
   }
   
   choice_metropolis<-function(delta,beta){
@@ -98,12 +107,35 @@ library(doParallel)
     show(ploten)
   }
   
-  #comienza el programa
   
+  nu_sq <- function(points, rec, RadB= 2.5*5/(2*pi) , n=100){
+    Lay <- length(rec)
+    teselap <- deldir(points$x, points$y, rw = rec[[1]])
+    teselba <- deldir(RadB*points$x, points$y, rw = rec[[Lay]])
+    tilap <- tile.list(teselap)[(n+1):(2*n)]
+    tilba <- tile.list(teselba)[(n+1):(2*n)]
+    
+    cellsdf<-data.frame(edgesA=integer(),edgesB=integer())
+    for (i in 1:length(tilap)) {
+      cellsdf[i,c(1,2)]<-c(length(tilap[[i]]$x),length(tilba[[i]]$x))
+    }
+    num <- sum((cellsdf[,1]-cellsdf[,2])^2)/n
+    den <- 2*(sum(cellsdf[,1])/n)*(sum(cellsdf[,2])/n)
+    return(num/den)
+  }
+  
+  
+  #Program starts
+  
+  
+  #We define a function to run the algorithm, 
+  #this way allows us to run simulations with different parameters at the same
+  #time, calling the function with different initial values
+  #The function works exactly as the script in N_cylinder_algorithm.R
   
   metropolisad<-function(seed = 666, steps = 250, n = 100, L=5,
                          RadiusA = 5/(2*pi), Ratio = 2.5, cyl_length = 20,
-                         gamma_ad = 0.15, lambda_ad = 0.04, beta = 100){
+                         gamma_ad = 0.15, lambda_ad = 0.04, beta = 100, s0=1){
     
     
     #We define our variables
@@ -123,8 +155,8 @@ library(doParallel)
     r <- cyl_width_A/n #radius to make the moves
     Am <- (cyl_width_A*(cyl_length))/n
     
-    rec <- list()
-    rad <- list()
+    rec <- vector(mode = "list", length = L)
+    rad <- numeric(L)
     
     for(k in 1:L){
       rad[[k]]<- RadiusA+(k-1)*(cyl_thickness/(L-1)) #the radius of the layer k
@@ -143,7 +175,7 @@ library(doParallel)
     points <- data.frame(x=x,y=y)
     pointsinit <- points
     energytesel <- tesellation_energy_N(points$x, points$y, Am, rec , rad,
-                                        gamma_ad, lambda_ad, n, L)
+                                        gamma_ad, lambda_ad, n, L, s0)
     energyinit <- energytesel
     
     #We create the variables to store the results
@@ -163,36 +195,40 @@ library(doParallel)
         points2<-move_points(points,cyl_width_A,cyl_length,r,n)
         energytesel2<-tesellation_energy_N(points2$x, points2$y, Am,
                                                 rec, rad, 
-                                                gamma_ad, lambda_ad, n, L)
+                                                gamma_ad, lambda_ad, n, L, s0)
         c<-choice_metropolis(energytesel2-energytesel,beta)
-        cond<-c==1
+        cond <- c==1
         if(cond){
           points<-points2
           energytesel<-energytesel2
         }
       }
       gc()
-      histpts[(j*3*n+1):(j*3*n+3*n),c(1,2)]<-points
+      histpts[(j*3*n+1):(j*3*n+3*n),c(1,2)] <- points
       histpts[(j*3*n+1):(j*3*n+3*n),3]<-j+1
       energhist[j+1,c(1,2)]<-c(j,energytesel)
       energytesel
     }
-    return(list(histpts,energhist))
+    nu2 <- nu_sq(points = points, rec = rec, n = 100)
+    return(list(histpts,energhist,nu2))
   }
   
   
-  cl <- makeCluster(4)
+  
+ #Now the following code allows to do simulations in different cpu cores
+ # at the same time
+
+  cl <- makeCluster(4) #number of cores (4 by default in ordinary laptops)
   registerDoParallel(cl)
-  
-  
-  results<-foreach(i=100:104, .combine = rbind, .packages = "deldir") %dopar% {
-    metropolisad(seed = i, steps = 2)
+
+  # We execute the parallel for and store the results
+  results<-foreach(i=c(10,20), .combine = rbind, .packages = "deldir") %dopar% {
+    metropolisad(seed = 1000, steps = 3, L=i)
   }
-  
-  stopCluster(cl)
-  
+
+  stopCluster(cl) #we stop the clusterization
+
   stopImplicitCluster()
+
+  # save(results, file = "results.Rds")
   
-  save(results, file = "results.Rds")
-  
- 
