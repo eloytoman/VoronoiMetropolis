@@ -6,7 +6,7 @@ library(dplyr)
 library(nls.multstart)
 
 
-#This script takes the results after performing dinstinct simulations
+#This script takes the results after performing distinct simulations (in parallel)
 #and makes the plots corresponding to the lewis law and the histogram of 
 #sides of al the 400ths tessellations of every simulation
 
@@ -554,11 +554,11 @@ pointsfin <- filter(results[[1]], Frame==550)
 save_tessellation_Layers(pointsinit, filename = "nobend_f1.csv")
 save_tessellation_Layers(pointsfin, filename = "nobend_f150.csv")
 
-alphas<-c(0.05,0.2,0.5,1,2,5,10,50)
+alphas<-c(0.001,0.005,0.01,0.05,0.1,0.5,1,2)
 
 for (i in 1:8) {
   for (j in 1:Lay) {
-    points[[j]]<- filter(results[[i]][[j]], Frame==300)
+    points[[j]]<- filter(results[[i]][[j]], Frame==551)
   }
   tit<-paste0("data_alpha_",alphas[[i]],".csv")
   save_tessellation_Layers_Bending(points, filename = tit)
@@ -587,8 +587,9 @@ scutoids_perc_cells_1layer <- function(points1x,points1y,points2x,points2y, rec1
   for (i in 1:100) {
     if(cellsdf$edgesA[[i]]!=cellsdf$edgesB[[i]]){countdf$intercalations[[i]]=1}
   }
-  return(countdf)
+  return(countdf$intercalations)
 }
+
 
 
 scutoids_perc_cells_sim_nobend <- function(points, rec, rad, Lay=10){
@@ -605,7 +606,10 @@ scutoids_perc_cells_sim_nobend <- function(points, rec, rad, Lay=10){
 
 points<-filter(histpts, Frame == 300)
 sc_pc <- scutoids_perc_cells_sim_nobend(points, rec, rad)
-perc_sc <-length(filter(sc_pc), intercalations>0)
+hist(sc_pc$intercalations)
+perc_sc <-length(filter(sc_pc, intercalations>0))
 print(perc_sc)
-
+tsl<-deldir(points1x*(rad[[10]]/rad[[1]]),points1y,rw=rec[[10]])
+tilJ<-tile.list(tsl)[(n+1):(2*n)]
+save_tessellation_Layers(points, filename = "intercalations.csv")
 
