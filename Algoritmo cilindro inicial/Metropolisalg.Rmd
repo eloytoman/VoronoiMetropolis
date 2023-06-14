@@ -2,7 +2,9 @@
 title: "Metropolis' Algorithm"
 author: "Eloy"
 date: "25/2/2022"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ## Description of the algorithm.
@@ -152,7 +154,7 @@ n<-40
 
 r<- wid*2/n #radio en que cambiamos el punto
 bet<-10
-pasos<-50
+pasos<-1
 
 
 A0<-(wid*(ymax-ymin))/n

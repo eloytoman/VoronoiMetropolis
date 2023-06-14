@@ -5,8 +5,8 @@ library(gganimate)
 library(dplyr)
 library(plotly)
 
-
-changepoint3_alg2<-function(pt,ind){
+changepoint3<-function(pt){
+  ind<-sample(1:n,1)
   ptinx<-pt$x[ind]+rnorm(1,mean=0,sd=r)
   ptiny<-pt$y[ind]+rnorm(1,mean=0,sd=r)
   while((ptinx<xmin || ptinx>xmax)||(ptiny<ymin || ptiny>ymax)){
@@ -20,18 +20,21 @@ changepoint3_alg2<-function(pt,ind){
 
 energytes<-function(tile){
   perim<-tilePerim(tile)$perimeters
-  energycell<-c()
+  energytesel<-c(0)
   for (i in 1:length(tile)){
-    energycell[i]<-((k/2)*(((tile[[i]]$area)-A0)^2)) #+(gam/2)*(perim[[i]])^2+lambda*perim[[i]]
+    energytesel<-energytesel+((k/2)*(((tile[[i]]$area)-A0)^2))+(gam/2)*(perim[[i]])^2+lambda*perim[[i]]
   }
-  energytesel<-sum(energycell)
   return(energytesel)
 }
 
 teselandenergy3<-function(xt,yt){
   tesel<-deldir(xt,yt,rw=rec)
   tilest<-tile.list(tesel)[(n+1):(2*n)]
-  tesener<-energytes(tilest)
+  perim<-tilePerim(tilest)$perimeters
+  tesener<-c(0)
+  for (i in 1:n){
+    tesener<-tesener+((k/2)*(((tilest[[i]]$area)-A0)^2))+(gam/2)*(perim[[i]])^2+lambda*perim[[i]]
+  }
   return(tesener)
 }
 
@@ -202,11 +205,11 @@ energhist<-data.frame(iteration=0,energy=energyinit)
 
 histpts<-list()
 
-#añadir un plot aqui
+#a?adir un plot aqui
 
 for (j in 1:pasos) {
   for(l in 1:n) {
-    points2<-changepoint3_alg2(points,l)
+    points2<-changepoint3(points)
     energytesel2<-teselandenergy3(points2$x,points2$y)
     c<-choice(energytesel2-energytesel)
     if(c==1){
@@ -232,3 +235,10 @@ ggplotvor(points,"       Final Voronoi Tesselation")
 
 areasideplots(points)
 plotenergy(energhist)
+
+
+
+
+
+
+

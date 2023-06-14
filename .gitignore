@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 *.pper
 .Rproj.user/CC203444/build_options
@@ -5,3 +6,15 @@
 *.png
 *.json
 .Rhistory
+=======
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.png
+*.png
+frames
+*.Rds
+*.csv
+*.gif
+>>>>>>> 1198c01f42752272ecfdda05d0e9dea5cf29b77b
