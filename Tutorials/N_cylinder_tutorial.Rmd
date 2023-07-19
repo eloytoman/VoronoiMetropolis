@@ -1,7 +1,8 @@
 ---
 title: "Tutorial. Metropolis algorithm for N layers."
-output: html_notebook
-
+output:
+  html_document:
+    df_print: paged
 ---
 
 This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
@@ -23,10 +24,12 @@ source(PATH_MODEL)
 
 Now we set the necessary parameters. If we forget to set the value of some 
 parameter, it will take the default values (set in "MetropolisAlgorithm.R" file)
+
+
 ```{r}
 params = list(
   seed = 42,
-  steps = 3,
+  steps = 100,
   n = 100,
   L=3,
   RadiusA = 5/(2*pi),
@@ -84,14 +87,6 @@ knitr::kable(nu, format="html")
 
 Nu squared contains the single value of the metric after performing all the 
 iterations of the algorithm.
-
-
-
-
-
-
-
-
 
 
 
@@ -208,8 +203,6 @@ stopImplicitCluster()
 
 
 
-
-
 ```{r,include=FALSE}
 PATH_SIMANALYSIS = "Analysis/source_simulation_analysis.R"
 source(PATH_SIMANALYSIS)
@@ -217,8 +210,32 @@ source(PATH_SIMANALYSIS)
 
 
 ```{r}
-resord <- ord(results_par)
+simulations = 2
+resord <- ord(results_par, iter = params$steps, sim=simulations)
 ```
+```{r}
+resord
+```
+
+
+
+```{r}
+edgearsim<-funaux2simDOUBLE(resord,n=params$n,ps=simulations)
+edgearsim
+```
+
+
+```{r}
+stationarylewis(edgearsim[[1]][1:(100*simulations),c(1,2,3)])
+```
+
+
+
+
+```{r}
+coef <- adjsim(results_par,nsim=simulations,it=params$steps)
+```
+
 
 
 
