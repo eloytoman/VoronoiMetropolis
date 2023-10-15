@@ -6,11 +6,6 @@ library(dplyr)
 library(nls.multstart)
 
 
-#This script takes the results after performing distinct simulations (in parallel)
-#and makes the plots corresponding to the lewis law and the histogram of 
-#sides of al the 400ths tessellations of every simulation
-#It also contain functions to adjust the energy relaxation to an exponential function
-
 funaux<-function(p,rec = c(0,15,0,20), n = 100){
   
   #funaux returns a dataframe which first column is the edges of the cell and the
@@ -112,9 +107,10 @@ ord <- function(results, iter = 150, sim=100){
   #With this function we extract the points for one iteration of every simulation
   #iter is the specific iteration of the algorithm that we extract to make the analysis
   
-  ptsord<-data.frame(x=numeric(300*sim),y=numeric(300*sim))
+  ptsord<-data.frame(x=numeric(300*sim),y=numeric(300*sim),simulation=numeric(300*sim))
   for (i in 0:(sim-1)) {
     ptsord[(i*300+1):((i+1)*300),c(1,2)]<-results[[i+1]][results[[i+1]]$Frame==iter,c(1,2)]
+    ptsord[(i*300+1):((i+1)*300),3]<-i+1
   }
   return(ptsord)
 }
@@ -203,7 +199,7 @@ scutoids_analysis_oneiter<-function(pointsAx, pointsAy, pointsBx, pointsBy, rect
   return(countdf)
 }
 
-scutoids_percr<-function(histpts, rect1, rect2, n = 100, it=150){
+wescutoids_percr<-function(histpts, rect1, rect2, n = 100, it=150){
   #Computes the evolution of the percentage of escutoids in every iteration of the algorithm
   perc<-data.frame(it=integer(it), perc_sc=double(it))
   for (i in 1:it) {
@@ -239,16 +235,15 @@ scutoids_percr_simulations<-function(results, rect1, rect2, n=100, sim=100, it=1
   }
   perc$percen<-perc$percen/sim
   ploten<-ggplot(perc,aes(x=it,y=percen))+
-      geom_line(colour="#F8766D")+
-      xlab("Iteration of the algorithm")+
-      ylab("Percentage of escutoids")+
-      ggtitle("Evolution of the average percentage of escutoids. 100 simulations")
-    show(ploten)
+    geom_line(colour="#F8766D")+
+    xlab("Iteration of the algorithm")+
+    ylab("Percentage of escutoids")+
+    ggtitle("Evolution of the average percentage of escutoids. 100 simulations")
+  show(ploten)
   
   return(perc)
 }
 
-scutoids_percr_simulations(results,rec1,rec2)
 
 scutoids_prep <- function(pointsAx,pointsAy,pointsBx,pointsBy,rect1,rect2,
                           n = 100){
@@ -310,7 +305,7 @@ scutoids_analysis_simulations <- function(results, Ratio = 2.5, rect1 = rec1, re
   histdf_count <- data.frame(edgesA=integer(),
                              edgesB=integer(),
                              count=integer())
-
+  
   for (i in 1:sim) {
     #each simulation have a different distribution of sides, so we have to adapt
     
@@ -348,269 +343,8 @@ scutoids_analysis_simulations <- function(results, Ratio = 2.5, rect1 = rec1, re
     scale_fill_gradient(low = "light blue", high = "deepskyblue")+
     xlim(3.5,8.5)+
     ylim(3.5,8.5)
-    # xlim(min(histdf_avcount$edgesA)-0.5, max(histdf_avcount$edgesA)-0.5)+
-    # ylim(min(histdf_avcount$edgesB)-0.5, max(histdf_avcount$edgesB)-0.5)
+  # xlim(min(histdf_avcount$edgesA)-0.5, max(histdf_avcount$edgesA)-0.5)+
+  # ylim(min(histdf_avcount$edgesB)-0.5, max(histdf_avcount$edgesB)-0.5)
   show(scutoidsplot)
   return(histdf_avcount)
 }
-
-resord<-ord(results)
-edgearsim<-funaux2simDOUBLE(resord)
-stationarylewis(edgearsim[[1]][1:10000,c(1,2,3)])
-stationarylewis(edgearsim[[2]][1:10000,c(1,2,3)])
-coef<-adjsim(results)
-
-xmin<-0
-xmax<-5
-ymin<-0
-ymax<-20
-rec1 <- c(xmin,xmin+3*xmax,ymin,ymax)
-rec2 <- c(xmin,xmin+3*(xmax*2.5),ymin,ymax)
-
-
-
-scutoids_prep(points$x,points$y,(2.5)*points$x,points$y,rect1= rec1,rect2=rec2)
-scutoids_analysis_oneiter(points$x,points$y,(2.5)*points$x,points$y,rect1= rec1,rect2=rec2)
-df_scutoid <- scutoids_analysis_simulations(results)
-
-save_tessellation <- function(pts, rec = c(xmin,xmin+3*xmax,ymin,ymax),
-                              n = 100, radius = 5/(2*pi)){
-  b <- 1
-  tes <- deldir(pts$x,pts$y,rw=rec)
-  tiles <- tile.list(tes)[(n+1):(2*n)]
-  df <- data.frame(cell_id = double(), radius = double(),
-                   centroidx = double(), centroidy = double(),
-                   n_vertices=integer(), vert1x = double(), vert2x = double(),
-                   vert3x = double(), vert4x = double(), vert5x = double(),
-                   vert6x = double(), vert7x = double(), vert8x = double(),
-                   vert9x = double(), vert10x = double(), vert11x = double(),
-                   vert1y = double(), vert2y = double(), vert3y = double(),
-                   vert4y = double(), vert5y = double(), vert6y = double(), 
-                   vert7y = double(), vert8y = double(), vert9y = double(), 
-                   vert10y = double(), vert11y = double())
-  for (i in 1:n) {
-    df[i,1] <- tiles[[i]][[1]]
-    df[i,2] <- radius
-    df[i,3] <- tiles[[i]][[2]][[1]]
-    df[i,4] <- tiles[[i]][[2]][[2]]
-    df[i,5] <- length(tiles[[i]][[3]])
-    df[i,6:(5+length(tiles[[i]][[3]]))] <- tiles[[i]][[3]]
-    df[i,17:(16+length(tiles[[i]][[4]]))] <- tiles[[i]][[4]]
-  }
-  write.csv2(df, file = "output_data2.csv")
-  write.csv(df,file = "output_data.csv")
-  return(df)
-}
-
-# metropolisad_ben<-function(seed = 666, steps = 250, n = 100, Layers = 5,
-#                            RadiusA = 5/(2*pi), Ratio = 2.5, cyl_length = 20,
-#                            gamma_ad = 0.15, lambda_ad = 0.04, s0 = 1,
-#                            alpha = 1, beta = 100,
-# ){
-
-
-
-
-save_tessellation_Layers <- function(pts,
-                              n = 100, RadiusA = 5/(2*pi), Ratio = 2.5,
-                              cyl_length = 20,
-                              Layers = 10, filename){
-  RadiusB <- Ratio*RadiusA
-  cyl_width_A <- 2*pi*RadiusA
-  cyl_width_B <- 2*pi*RadiusB
-  cyl_thickness <- RadiusB-RadiusA
-  
-  xmin <- 0
-  xmax <- cyl_width_A
-  ymin <- 0
-  ymax <- cyl_length
-  
-  rec <- list()
-  rad <- list()
-  
-  for(k in 1:Layers){
-    rad[[k]]<- RadiusA+(k-1)*(cyl_thickness/(Layers-1)) #the radius of the layer k
-    rec[[k]]<-c(xmin,xmin+3*(2*pi*rad[[k]]),ymin,ymax)
-  }
-  
-  df <- data.frame(id_cell= integer(), Layer = double(), radius = double(),
-                   centroidx = double(), centroidy = double(),
-                   n_vertices=integer(), vert1x = double(), vert2x = double(),
-                   vert3x = double(), vert4x = double(), vert5x = double(),
-                   vert6x = double(), vert7x = double(), vert8x = double(),
-                   vert9x = double(), vert10x = double(), vert11x = double(),
-                   vert1y = double(), vert2y = double(), vert3y = double(),
-                   vert4y = double(), vert5y = double(), vert6y = double(), 
-                   vert7y = double(), vert8y = double(), vert9y = double(), 
-                   vert10y = double(), vert11y = double())
-  
-  for (j in 1:Layers) {
-    tes <- deldir(pts$x*(rad[[j]]/rad[[1]]),pts$y,rw=rec[[j]])
-    tiles <- tile.list(tes)[(n+1):(2*n)]
-    lon<-length(df$id_cell)
-    for (i in 1:n) {
-      df[lon+i,1] <- tiles[[i]][[1]]
-      df[lon+i,2] <- j
-      df[lon+i,3] <- rad[[j]]
-      df[lon+i,4] <- tiles[[i]][[2]][[1]]
-      df[lon+i,5] <- tiles[[i]][[2]][[2]]
-      df[lon+i,6] <- length(tiles[[i]][[3]])
-      df[lon+i,7:(6+length(tiles[[i]][[3]]))] <- tiles[[i]][[3]]
-      df[lon+i,18:(17+length(tiles[[i]][[4]]))] <- tiles[[i]][[4]]
-    }
-    gc()
-    rm(tiles,tes)
-  }
-  
-  write.table(df, file = filename, sep = ",", row.names = FALSE)
-  return(df)
-}
-
-
-
-
-save_tessellation_Layers(points, filename = "output_data.csv")
-
-
-
-
-
-save_tessellation_Layers_Bending <- function(pts,
-                                     n = 100, RadiusA = 5/(2*pi), Ratio = 2.5,
-                                     cyl_length = 20,
-                                     Layers=10, filename){
-  RadiusB <- Ratio*RadiusA
-  cyl_width_A <- 2*pi*RadiusA
-  cyl_width_B <- 2*pi*RadiusB
-  cyl_thickness <- RadiusB-RadiusA
-  
-  xmin <- 0
-  xmax <- cyl_width_A
-  ymin <- 0
-  ymax <- cyl_length
-  
-  rec <- list()
-  rad <- list()
-  
-  for(k in 1:Layers){
-    rad[[k]]<- RadiusA+(k-1)*(cyl_thickness/(Layers-1)) #the radius of the layer k
-    rec[[k]]<-c(xmin,xmin+3*(2*pi*rad[[k]]),ymin,ymax)
-  }
-  
-  df <- data.frame(id_cell = integer(), Layer = double(), Radius = double(),
-                   Centroidx = double(), Centroidy = double(),
-                   n_vertices = integer(), vert1x = double(), vert2x = double(),
-                   vert3x = double(), vert4x = double(), vert5x = double(),
-                   vert6x = double(), vert7x = double(), vert8x = double(),
-                   vert9x = double(), vert10x = double(), vert11x = double(),
-                   vert1y = double(), vert2y = double(), vert3y = double(),
-                   vert4y = double(), vert5y = double(), vert6y = double(), 
-                   vert7y = double(), vert8y = double(), vert9y = double(), 
-                   vert10y = double(), vert11y = double())
-  
-  for (j in 1:Layers) {
-    tes <- deldir(pts[[j]]$x, pts[[j]]$y, rw=rec[[j]])
-    tiles <- tile.list(tes)[(n+1):(2*n)]
-    lon <- length(df$Layer)
-    for (i in 1:n) {
-      df[lon+i,1] <- tiles[[i]]$ptNum-n
-      df[lon+i,2] <- j
-      df[lon+i,3] <- rad[[j]]
-      df[lon+i,4] <- tiles[[i]][[2]][[1]]
-      df[lon+i,5] <- tiles[[i]][[2]][[2]]
-      df[lon+i,6] <- length(tiles[[i]][[3]])
-      df[lon+i,7:(6+length(tiles[[i]][[3]]))] <- tiles[[i]][[3]]
-      df[lon+i,18:(17+length(tiles[[i]][[4]]))] <- tiles[[i]][[4]]
-    }
-    gc()
-    rm(tiles,tes)
-  }
-  
-  # write.csv2(df, file = "output_databending.csv")
-  write.table(df, file = filename, sep = ",", row.names = FALSE)
-  return(df)
-}
-
-
-
-dframe=save_tessellation_Layers_Bending(pts = points, Layers = 12,
-                                        filename = "output_databending_alpha2_150it.csv")
-
-
-
-
-x1 <- runif(n,xmin,xmax)
-y1 <- runif(n,ymin,ymax)
-
-x <- c(x1,x1+cyl_width,x1+2*cyl_width)
-y <- c(y1,y1,y1)
-
-#We create a list of dataframes which will store the points in each layer.
-pointsinit <- vector(mode = "list", length = 12)
-pointsinit <- lapply(1:L, function(i){data.frame(x=(rad[[i]]/Radius)*x,y=y)})
-
-
-pointsinit <- filter(results[[1]], Frame ==1)
-pointsfin <- filter(results[[1]], Frame==550)
-save_tessellation_Layers(pointsinit, filename = "nobend_f1.csv")
-save_tessellation_Layers(pointsfin, filename = "nobend_f150.csv")
-
-alphas<-c(0.001,0.005,0.01,0.05,0.1,0.5,1,2)
-
-for (i in 1:8) {
-  for (j in 1:Lay) {
-    points[[j]]<- filter(results[[i]][[j]], Frame==551)
-  }
-  tit<-paste0("data_alpha_",alphas[[i]],".csv")
-  save_tessellation_Layers_Bending(points, filename = tit)
-}
-
-for (j in 1:Lay) {
-  points[[j]]<- filter(results[[6]][[j]], Frame==550)
-}
-
-save_tessellation_Layers_Bending(points, filename = "cells05.csv")
-
-
-scutoids_perc_cells_1layer <- function(points1x,points1y,points2x,points2y, rec1,rec2, n = 100){
-  
-  tslA<-deldir(points1x,points1y,rw=rec1)
-  tilA<-tile.list(tslA)[(n+1):(2*n)]
-  tslB<-deldir(points2x,points2y,rw=rec2)
-  tilB<-tile.list(tslB)[(n+1):(2*n)]
-  
-  cellsdf<-data.frame(edgesA=integer(),edgesB=integer())
-  countdf<-data.frame(cell=1:100, intercalations=rep(0,100))
-  
-  for (i in 1:length(tilA)) {
-    cellsdf[i,c(1,2)]<-c(length(tilA[[i]]$x),length(tilB[[i]]$x))
-  }
-  for (i in 1:100) {
-    if(cellsdf$edgesA[[i]]!=cellsdf$edgesB[[i]]){countdf$intercalations[[i]]=1}
-  }
-  return(countdf$intercalations)
-}
-
-
-
-scutoids_perc_cells_sim_nobend <- function(points, rec, rad, Lay=10){
-  
-  countscut<-data.frame(cell=1:100, intercalations=rep(0,100))
-  for(j in 1:(Lay-1)){
-    countscut$intercalations <- countscut$intercalation +
-      scutoids_perc_cells_1layer(points$x*(rad[[j]]/rad[[1]]),points$y,
-                                 points$x*(rad[[j+1]]/rad[[1]]),points$y,
-                                 rec[[j]],rec[[j+1]])
-  }
-  return(countscut)
-}
-
-points<-filter(histpts, Frame == 300)
-sc_pc <- scutoids_perc_cells_sim_nobend(points, rec, rad)
-hist(sc_pc$intercalations)
-perc_sc <-length(filter(sc_pc, intercalations>0))
-print(perc_sc)
-tsl<-deldir(points1x*(rad[[10]]/rad[[1]]),points1y,rw=rec[[10]])
-tilJ<-tile.list(tsl)[(n+1):(2*n)]
-save_tessellation_Layers(points, filename = "intercalations.csv")
-

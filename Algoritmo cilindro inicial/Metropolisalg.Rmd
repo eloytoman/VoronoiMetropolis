@@ -2,7 +2,9 @@
 title: "Metropolis' Algorithm"
 author: "Eloy"
 date: "25/2/2022"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ## Description of the algorithm.

@@ -1,0 +1,61 @@
+---
+title: "Save_tessellation_tutorial"
+author: "Eloy"
+date: "12/10/2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Tutorial on how to save the results of the algorithm.
+
+First we import the necessary functions for this (they are stored in save_utils.R from utils folder)
+
+```{r}
+PATH_PROJECT = "~/ProjectVoronoiMetropolis/VoronoiMetropolis/Tutorials/"
+setwd(PATH_PROJECT)
+knitr::opts_knit$set(root.dir = PATH_PROJECT)
+PATH_FUNCTIONS = "Utils/save_utils.R"
+source(PATH_FUNCTIONS)
+```
+
+In the save_utils.R file we have 2 functions, called *save_tessellation_layers* and *save_tessellation_layers_bending*. In the case of save_tessellation_layers, the input are the points of the apical layer (in dataframe format), as usual, since we can reconstruct the rest of the points. In the case where bending is involves, the input (points) is a list of dataframes, and in each element of the list we have the corresponding dataframe for that layer (also as usual).
+
+
+We take an example of the use, generating a tessellation.
+
+```{r}
+PATH_MODEL = "N-cylinder/source_MetropolisAlgorithm.R"
+source(PATH_MODEL)
+params = list(
+  seed = 42,
+  steps = 5,
+  n = 100,
+  L=3,
+  RadiusA = 5/(2*pi),
+  Ratio = 2.5,
+  cyl_length = 20,
+  gamma_ad = 0.15, 
+  lambda_ad = 0.04, 
+  beta = 100, 
+  s0=1
+  )
+result_alg <- do.call(metropolisad,params)
+```
+
+Now, we select the tessellation that we want to save
+```{r}
+library(dplyr) # to do the filtering operation in the dataframe
+pointsinit <- filter(result_alg[[1]], Frame ==1)
+pointsend <- filter(result_alg[[1]], Frame==5)
+pts_info_init = save_tessellation_layers(pointsinit, filename = "saved_tessellations/example_1_of_saved_tessellation.csv")
+pts_info_end = save_tessellation_layers(pointsend, filename = "saved_tessellations/example_2_of_saved_tessellation.csv")
+```
+
+And the same with bending, after getting the results, we extract the points (in the format list of dataframes) and we use the corresponding functions.
+
+Then, to do the plots, we use the mathematica file with this input.
+
+

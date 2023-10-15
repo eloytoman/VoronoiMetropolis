@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+# VoronoiMetropolis
+ Metropolis algorithm for Voronoi Tessellations
+ok
+=======
 ---
 title: "README"
 author: "Eloy"
@@ -22,3 +27,4 @@ Both algorithms have two versions: a normal version and a parallelized version. 
 In addition to the algorithms, the repository also contains scripts in the "Analysis" folder that are used to analyze the results of the code and produce output that is readable by other programming languages. The "Data" folder contains some sample data that have been executed and can be used for testing purposes.
 
 Overall, this repository is designed to provide a flexible and scalable platform for simulation and analysis of various processes.
+>>>>>>> 1198c01f42752272ecfdda05d0e9dea5cf29b77b

@@ -1,3 +1,12 @@
+<<<<<<< HEAD
+
+*.pper
+.Rproj.user/CC203444/build_options
+.Rproj.user/CC203444/rmd-outputs
+*.png
+*.json
+.Rhistory
+=======
 .Rproj.user
 .Rhistory
 .RData
@@ -8,3 +17,4 @@ frames
 *.Rds
 *.csv
 *.gif
+>>>>>>> 1198c01f42752272ecfdda05d0e9dea5cf29b77b

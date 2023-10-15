@@ -1,0 +1,242 @@
+---
+title: "Tutorial. Metropolis algorithm for N layers."
+output:
+  html_document:
+    df_print: paged
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+ 
+# Running Metropolis algorithm
+ 
+We import the necessary libraries from our repository (stored in the file 
+"N-cylinder/MetropolisAlgorithm.R").
+```{r message=FALSE, warning=FALSE, include=FALSE}
+PATH_PROJECT = "~/ProjectVoronoiMetropolis/VoronoiMetropolis/Tutorials/"
+setwd(PATH_PROJECT)
+knitr::opts_knit$set(root.dir = PATH_PROJECT)
+PATH_MODEL = "N-cylinder/source_MetropolisAlgorithm.R"
+source(PATH_MODEL)
+```
+
+Now we set the necessary parameters. If we forget to set the value of some 
+parameter, it will take the default values (set in "MetropolisAlgorithm.R" file)
+
+
+```{r}
+params = list(
+  seed = 42,
+  steps = 100,
+  n = 100,
+  L=3,
+  RadiusA = 5/(2*pi),
+  Ratio = 2.5,
+  cyl_length = 20,
+  gamma_ad = 0.15, 
+  lambda_ad = 0.04, 
+  beta = 100, 
+  s0=1
+  )
+```
+
+The function that performs Metropolis Algorithm is called "metropolisad" (the ad
+suffix refers to the adimensionality of the algorithm). Now we do a call of the
+function with the parameters desired.
+```{r}
+result_alg <- do.call(metropolisad,params)
+```
+
+Now we have the desired results stored in the variable "result_alg". Let's deep
+into this variable, which has 3 elements: the history of points locations in 
+every step, the history of the energy at every step, and the value of nu 
+squared, which is a metric over the topology of the surface.
+
+### Dataframe with history of points
+
+```{r}
+hist_points = result_alg[[1]]
+knitr::kable(hist_points[1:5,], format="html")
+```
+
+We see 3 columns. Every row represents a point, the columns "x" and "y"
+represent the x and y coordinates of the point, and the column "Frame" 
+respresent the step of the algorithm. So, if we have executed the code for 
+50 steps and 100 cells, we will have 100x50 rows in total (points x steps).
+
+### History of energy levels
+
+```{r}
+hist_energy = result_alg[[2]]
+knitr::kable(hist_energy[1:4,], format="html")
+```
+
+We see that hist_energy contains simply 2 rows, one indicating the iteration (or
+step or Frame) and other indicating the energy after performing that number of
+iterations of Metropolis. In our case, if we execute the algorithm for 250 steps
+we will have 250 rows.
+
+### Nu squared
+
+```{r}
+nu = result_alg[[3]]
+knitr::kable(nu, format="html")
+```
+
+Nu squared contains the single value of the metric after performing all the 
+iterations of the algorithm.
+
+
+
+
+
+# Analysis of the results
+
+Now let's analyze the results we have got. First we import our library that 
+contains the necessary code and functions.
+
+```{r,include=FALSE}
+PATH_ANALYSIS = "Analysis/source_analysis.R"
+source(PATH_ANALYSIS)
+```
+
+```{r}
+rad_coef = params$Ratio
+steps = params$steps
+Radius = params$RadiusA
+Radius2 <- rad_coef*Radius
+cyl_thickness <- Radius2-Radius
+cyl_length = params$cyl_length
+cyl_width = Radius*(2*pi)
+rec <- list()
+rad <- list()
+L = params$L
+n = params$n
+A0 <- ((Radius2+Radius)*pi*cyl_length)/n
+xmin <- 0
+ymin <- 0
+xmax <- cyl_width
+ymax <- cyl_length
+for(k in 1:L){
+  rad[[k]]<- Radius+(k-1)*(cyl_thickness/(L-1)) #the radius of the layer k
+  rec[[k]]<-c(xmin,xmin+3*(2*pi*rad[[k]]),ymin,ymax)
+}
+lamad = params$lambda_ad
+gamad = params$gamma_ad
+```
+
+
+The function energy_analisis_1sim  takes as argument the points in each iteration and returns the energy shelled by type in each iteration (an extension of the energy history). The columns represents the elastic, contractile and tensile energy, together with the sum of all (the total energy). The function plot_energyss takes the output of this function and makes a plot
+
+```{r}
+enerhist_bytype <- energy_analisis_1sim(hist_points, it =steps, lay = L, n = n)
+knitr::kable(enerhist_bytype[1:3,], format="html")
+plot_energyss(enerhist_bytype)
+```
+
+
+The function energy_analysis_nobend takes as argument the history of points in 1 simulations. Then it returns the initial energy decomposition by layers (separated by energy type) and the final energy decomposition (also by layer). The function also makes the 2 corresponding plots.
+
+```{r}
+
+results_analysis <-energy_analysis_nobend(histpts = hist_points, it = steps, n = n, Lay =L)
+initial_energies <- results_analysis[[1]]
+final_energies <- results_analysis[[2]]
+```
+
+
+
+The function energy_layers_sim_1 returns 1 dataframe with several columns, corresponding to the layers of the cylinder, and in every column we have the evolution of the energy along the specific layer. This funtion calls internally to the function energy_1_layer, that computes the specific energy of 1 layer in 1 given iteration.
+
+```{r}
+hist_layers<-energy_layers_sim1(histpts, it = steps, Lay =L, n =n, rect = rec)
+knitr::kable(hist_layers[1:3,], format="html")
+plot_energy_decomp(hist_layers)
+```
+
+
+
+
+
+# Parallel execution
+
+If we want to execute a parallel execution with multiple simulations at the same
+time, it is also possible with the following syntax. In this example, we use
+4 clusters for execution (the default number of cores in ordinary laptops),
+and we want to perform different simulations changing the number of layers "L",
+but with the rest of parameters with default values. We could also perform all 
+of the simulations with the same parameters, depending on the objective.
+
+```{r include=FALSE}
+library(foreach)
+library(doParallel)
+
+N_CLUSTERS = 2
+cl <- makeCluster(N_CLUSTERS) 
+registerDoParallel(cl)
+
+results_par<-foreach(i=c(1,2), .combine = rbind, .packages = "deldir") %dopar% {
+  
+  params = list(
+  seed = 42,
+  steps = 3,
+  n = 100,
+  L=3*i,
+  RadiusA = 5/(2*pi),
+  Ratio = 2.5,
+  cyl_length = 20,
+  gamma_ad = 0.15, 
+  lambda_ad = 0.04, 
+  beta = 100, 
+  s0=1
+  )
+  
+  do.call(metropolisad,params)
+}
+
+stopCluster(cl)
+
+stopImplicitCluster()
+```
+
+
+
+```{r,include=FALSE}
+PATH_SIMANALYSIS = "Analysis/source_simulation_analysis.R"
+source(PATH_SIMANALYSIS)
+```
+
+
+```{r}
+simulations = 2
+resord <- ord(results_par, iter = params$steps, sim=simulations)
+```
+```{r}
+resord
+```
+
+
+
+```{r}
+edgearsim<-funaux2simDOUBLE(resord,n=params$n,ps=simulations)
+edgearsim
+```
+
+
+```{r}
+stationarylewis(edgearsim[[1]][1:(100*simulations),c(1,2,3)])
+```
+
+
+
+
+```{r}
+coef <- adjsim(results_par,nsim=simulations,it=params$steps)
+```
+
+
+
+
+
