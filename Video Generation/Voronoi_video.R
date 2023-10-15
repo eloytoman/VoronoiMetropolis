@@ -8,7 +8,7 @@ library(deldir)
 histpts<-results[[1]]
 
 byareaenergy<-function(points,rect){
-  tesel<-deldir((points$x)*2.5,points$y,rw=rect)
+  tesel<-deldir((points$x),points$y,rw=rect)
   tilest<-tile.list(tesel)[(n+1):(2*n)]
   areas<-sapply(tilest,function(x){x$area})
   points[,4]<-c(areas,areas,areas)
@@ -37,10 +37,8 @@ maxar<-max(df$`Area of the cell`)
 
 
 # Filtering for just first frame
-ff_total1<- byareaenergy(filter(histpts, Frame == 1),rec[[10]])
-ff_total1$x <- ff_total1$x*2.5
-ff_total150 <- byareaenergy(filter(histpts, Frame == 150), rec[[10]])
-ff_total150$x <- ff_total150$x*2.5
+ff_total1<- byareaenergy(filter(histpts, Frame == 1),rec[[1]])
+ff_total150 <- byareaenergy(filter(histpts, Frame == 150), rec[[1]])
 
 # Defining pitch size for voronoi plot
 rectangle <- data.frame(x=c(xmin,xmin,xmax+2*wid,xmax+2*wid),y=c(ymin,ymax,ymax,ymin))
@@ -50,8 +48,8 @@ rectangle<-rectangle2
 # Make first frame and test what image looks like
 ff <- ggplot(ff_total150,aes(x,y)) +
   geom_voronoi(aes(fill=area), size=.125, outline = rectangle) +
-  geom_vline(xintercept = xmax ,color = 'white',linetype='solid',size=0.5) +
-  geom_vline(xintercept = xmax+wid,color = 'white',linetype='solid',size=0.5) +
+  geom_vline(xintercept = xmax ,color = 'white',linetype='solid',size=1.3) +
+  geom_vline(xintercept = 1*(xmax+wid), color = 'white',linetype='solid',size=1.3) +
   stat_voronoi(geom="path", outline = rectangle) +
   geom_point(size=3) +
   scale_fill_gradient(low = "orange", high = "white",
@@ -71,11 +69,12 @@ ff <- ggplot(ff_total150,aes(x,y)) +
     ,axis.text.x  = element_blank() # Remove axis scale (X-Axis)
     ,axis.title.x = element_blank() # Remove axis label (X-Axis) 
     ,legend.position="right"
-  ) +
-  labs(title = "Representation of the Basal surface" # Title text
-       ,subtitle = "         After applying algorithm")
-
+  )
 show(ff)
+
+ggsave(filename = "aaa.png" # filename
+       ,plot = ff # variable for file
+       ,width = 25, height = 7, dpi = 300, units = "in")
 
 # Create test image
 ggsave(filename = paste0("frame_",1,".png") # filename
