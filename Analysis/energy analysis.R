@@ -6,6 +6,7 @@ library(dplyr)
 library(plotly)
 library(foreach)
 library(doParallel)
+library(tidyr)
 
 
 # energy_analysis -> función para sacar la energía de cada tipo para cada capa cuando 
@@ -74,6 +75,39 @@ energy_analysis <- function(points){
   return(tesener)
 }
 
+enerhist <- energy_analisis_1sim(hist1)
+
+plot_energyss(enerhist)
+
+plot_energyss<-function(enerhist){
+  
+  p<-ggplot(enerhist, aes(x = it))+
+    # geom_line(aes(y = toten, colour = "Total energy"))+
+    geom_line(aes(y= tenen, colour = "Tension energy"))+
+    geom_line(aes(y = elen, colour = "Adhesion energy"))+
+    geom_line(aes(y = conten, colour = "Contractile energy"))+
+    # geom_line(aes(x = Layer, y = Bending_energy, colour = "Bending energy"))+
+    labs(title = "Decomposition of system energies",
+         x = "Iteration", y = "Average energy per cell",
+         color = "Energy type") +
+    scale_colour_manual("",
+                        breaks = c("Tension energy",
+                                   "Adhesion energy",
+                                   "Contractile energy"),
+                                   # "Total energy",
+                                   # "Bending energy"),
+                        values = c("red",
+                                   "blue",
+                                   "darkgreen"))
+                                   # "orange",
+                                   # "purple"))
+  
+  show(p)
+}
+
+energy_layers_sim1 <- function(histpts,it = 150, Lay = 10, n = 100){
+  
+    tesener <- dat
 energy_analysis_nobend <- function(histpts, it=150, n=100, Lay=10){
   
   tesener <- data.frame( Layer = seq(1, rad_coef, by = ((rad_coef-1)/(Lay-1))),
@@ -101,10 +135,10 @@ energy_analysis_nobend <- function(histpts, it=150, n=100, Lay=10){
     tenener <- sum(lamad*perims)/n
     gam<-gamad*exp((1-(rad[[i]]/rad[[1]]))/1 )
     contener <- sum((gam/2)*(perims^2))/n
-    tesener[i,c(2,3,4,5)] <- c(elener/Lay,
-                               tenener/Lay,
-                               contener/Lay,
-                               (elener+tenener+contener)/(Lay*n))
+    tesener[i,c(2,3,4,5)] <- c(elener/(Lay/n),
+                               tenener/(Lay/n),
+                               contener/(Lay/n),
+                               (elener+tenener+contener)/(Lay/n))
     
     tesellast <- deldir(pointslast$x*(rad[[i]]/rad[[1]]),pointslast$y,rw=rec[[i]])
     tilestlast <- tile.list(tesellast)[(n+1):(2*n)]
@@ -119,53 +153,29 @@ energy_analysis_nobend <- function(histpts, it=150, n=100, Lay=10){
     tesener2[i,c(2,3,4,5)] <- c(elenerl/Lay,
                                tenenerl/Lay,
                                contenerl/Lay,
-                               (elenerl+tenenerl+contenerl)/(n*Lay))
+                               (elenerl+tenenerl+contenerl))
   }
   
-  p<-ggplot(tesener, aes(x = Layer))+
-    geom_line(aes(y = Total_energy, colour = "Total energy"))+
-    geom_line(aes(y=Tension_energy, colour = "Tension energy"))+
-    geom_line(aes(y = Elastic_energy,colour = "Adhesion energy"))+
-    geom_line(aes(y = Contractile_energy, colour = "Contractile energy"))+
-    # geom_line(aes(x = Layer, y = Bending_energy, colour = "Bending energy"))+
-    labs(title = "Energy Analysis before executing the algorithm",
-         x = "Layer ratio (R/Ra)", y = "Average energy of the cell",
-         color = "Energy type") +
-    scale_colour_manual("",
-                        breaks = c("Tension energy",
-                                   "Adhesion energy",
-                                   "Contractile energy",
-                                   "Total energy"),
-                                   # "Bending energy"),
-                        values = c("red",
-                                   "blue",
-                                   # "darkgreen",
-                                   "orange",
-                                   "purple"))
+  tesener_long <- tesener %>%
+    pivot_longer(cols = c(Tension_energy, Elastic_energy, Contractile_energy, Total_energy),
+                 names_to = "Energy_Type", values_to = "Energy_Value")
   
+  p <- ggplot(tesener_long, aes(x = Layer, y = Energy_Value, colour = Energy_Type)) +
+    geom_line() +
+    labs(title = paste0("Energy Analysis after ", it, " iterations of the algorithm"),
+         x = "Layer ratio (R/Ra)", y = "Average energy of the cell",
+         color = "Energy type")
   show(p)
   
-  p2<-ggplot(tesener2, aes(x = Layer))+
-    geom_line(aes(y = Total_energy, colour = "Total energy"))+
-    geom_line(aes(y=Tension_energy, colour = "Tension energy"))+
-    geom_line(aes(y = Elastic_energy,colour = "Adhesion energy"))+
-    geom_line(aes(y = Contractile_energy, colour = "Contractile energy"))+
-    # geom_line(aes(x = Layer, y = Bending_energy, colour = "Bending energy"))+
-    labs(title = paste0("Energy Analysis after ",it, " iterations of the algorithm"),
-         x = "Layer ratio (R/Ra)", y = "Average energy of the cell",
-         color = "Energy type") +
-    scale_colour_manual("",
-                        breaks = c("Tension energy",
-                                   "Adhesion energy",
-                                   "Contractile energy",
-                                   "Total energy"),
-                        # "Bending energy"),
-                        values = c("red",
-                                   "blue",
-                                   # "darkgreen",
-                                   "orange",
-                                   "purple"))
+  tesener2_long <- tesener2 %>%
+    pivot_longer(cols = c(Tension_energy, Elastic_energy, Contractile_energy, Total_energy),
+                 names_to = "Energy_Type", values_to = "Energy_Value")
   
+  p2 <- ggplot(tesener2_long, aes(x = Layer, y = Energy_Value, colour = Energy_Type)) +
+    geom_line() +
+    labs(title = paste0("Energy Analysis after ", it, " iterations of the algorithm"),
+         x = "Layer ratio (R/Ra)", y = "Average energy of the cell",
+         color = "Energy type")
   show(p2)
   
   
@@ -220,40 +230,7 @@ energy_analisis_1sim <- function(histpts, it = 150, lay = 10, n =100){
   }
   return(histener)
 }
-
-enerhist <- energy_analisis_1sim(hist1)
-
-plot_energyss(enerhist)
-
-plot_energyss<-function(enerhist){
-  
-  p<-ggplot(enerhist, aes(x = it))+
-    # geom_line(aes(y = toten, colour = "Total energy"))+
-    geom_line(aes(y= tenen, colour = "Tension energy"))+
-    geom_line(aes(y = elen, colour = "Adhesion energy"))+
-    geom_line(aes(y = conten, colour = "Contractile energy"))+
-    # geom_line(aes(x = Layer, y = Bending_energy, colour = "Bending energy"))+
-    labs(title = "Decomposition of system energies",
-         x = "Iteration", y = "Average energy per cell",
-         color = "Energy type") +
-    scale_colour_manual("",
-                        breaks = c("Tension energy",
-                                   "Adhesion energy",
-                                   "Contractile energy"),
-                                   # "Total energy",
-                                   # "Bending energy"),
-                        values = c("red",
-                                   "blue",
-                                   "darkgreen"))
-                                   # "orange",
-                                   # "purple"))
-  
-  show(p)
-}
-
-energy_layers_sim1 <- function(histpts,it = 150, Lay = 10, n = 100){
-  
-    tesener <- data.frame( iter = 1:it,
+a.frame( iter = 1:it,
                            enlay1 = double(it),
                            enlay3 = double(it),
                            enlay5 = double(it),

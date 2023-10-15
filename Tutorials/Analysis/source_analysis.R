@@ -290,3 +290,5 @@ plot_energy_decomp <- function(layers_hist) {
     labs(title="Energy relaxation by layer",x = "Iteration", y = "Energy", color = "Layer")
   
 }
+
+
